@@ -1,0 +1,151 @@
+<div class="login-wrapper">
+
+    <aside class="login-brand">
+        <div class="brand-overlay"></div>
+
+        <div class="brand-content">
+            <div class="brand-logo">
+                <div class="logo-mark">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M3 11.5 12 4l9 7.5v8a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 19.5v-8Z" fill="none"
+                            stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+                        <path d="M9 21v-6h6v6" fill="none" stroke="currentColor" stroke-width="1.8"
+                            stroke-linejoin="round" />
+                    </svg>
+                </div>
+
+                <div>
+                    <span class="logo-text">Home Desk</span>
+                    <span class="logo-subtitle">Mobiliario de Diseño & Gestión Integral</span>
+                </div>
+            </div>
+
+            <div class="brand-message">
+                <h2>Tu espacio, tu comodidad.</h2>
+                <p>
+                    Soluciones de mobiliario diseñadas para transformar
+                    tus espacios.
+                </p>
+            </div>
+        </div>
+    </aside>
+
+    <main class="login-form-panel">
+
+        <div class="login-card">
+
+            <header class="login-header">
+                <div class="login-logo">
+                    <div class="logo-mark logo-mark--small">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M3 11.5 12 4l9 7.5v8a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 19.5v-8Z"
+                                fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+                            <path d="M9 21v-6h6v6" fill="none" stroke="currentColor" stroke-width="1.8"
+                                stroke-linejoin="round" />
+                        </svg>
+                    </div>
+
+                    <span>Home Desk</span>
+                </div>
+
+                <h1>Bienvenido a Home Desk</h1>
+
+                <p class="login-tagline">
+                    Tu espacio, tu comodidad.
+                </p>
+
+                <p class="login-description">
+                    Ingresa tus credenciales para continuar
+                </p>
+            </header>
+
+            <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate class="login-form">
+
+                <div class="field" [class.field--error]="usernameOrEmail.invalid && usernameOrEmail.touched">
+
+                    <label for="usernameOrEmail">
+                        Usuario o correo
+                    </label>
+
+                    <input id="usernameOrEmail" class="hd-input" type="text" formControlName="usernameOrEmail"
+                        placeholder="jhon@homedesk.com" autocomplete="username" />
+
+                    @if (usernameOrEmail.invalid && usernameOrEmail.touched) {
+                    <span class="field__error">
+                        Este campo es requerido
+                    </span>
+                    }
+                </div>
+
+                <div class="field" [class.field--error]="password.invalid && password.touched">
+
+                    <label for="password">
+                        Contraseña
+                    </label>
+
+                    <div class="hd-input-wrap">
+
+                        <input id="password" class="hd-input" [type]="showPassword() ? 'text' : 'password'"
+                            formControlName="password" placeholder="••••••••" autocomplete="current-password" />
+
+                        <button type="button" class="toggle-password" (click)="togglePassword()"
+                            [attr.aria-label]="showPassword() ? 'Ocultar contraseña' : 'Mostrar contraseña'">
+
+                            @if (showPassword()) {
+                            <svg viewBox="0 0 24 24">
+                                <path
+                                    d="M3 3l18 18M10.6 10.6a2 2 0 0 0 2.8 2.8M9.9 5.2A10.8 10.8 0 0 1 12 5c5 0 8.5 4.5 9.5 7a12.7 12.7 0 0 1-3.1 4.5M6.1 6.1C4.4 7.3 3.3 9 2.5 12c1 2.5 4.5 7 9.5 7 1.1 0 2.1-.2 3-.5"
+                                    fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+                                    stroke-linejoin="round" />
+                            </svg>
+                            } @else {
+                            <svg viewBox="0 0 24 24">
+                                <path d="M2.5 12S6 5 12 5s9.5 7 9.5 7-3.5 7-9.5 7-9.5-7-9.5-7Z" fill="none"
+                                    stroke="currentColor" stroke-width="1.8" />
+                                <circle cx="12" cy="12" r="2.5" fill="none" stroke="currentColor" stroke-width="1.8" />
+                            </svg>
+                            }
+                        </button>
+                    </div>
+
+                    @if (password.invalid && password.touched) {
+                    <span class="field__error">
+                        Este campo es requerido
+                    </span>
+                    }
+                </div>
+
+                @if (errorMessage()) {
+                <div class="alert-error">
+                    <svg viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8" />
+                        <path d="M12 7v6M12 16.5v.5" fill="none" stroke="currentColor" stroke-width="1.8"
+                            stroke-linecap="round" />
+                    </svg>
+
+                    <span>{{ errorMessage() }}</span>
+                </div>
+                }
+
+                <button type="submit" class="btn-primary" [disabled]="isLoading()">
+
+                    @if (isLoading()) {
+                    <span class="spinner"></span>
+                    Iniciando...
+                    } @else {
+                    Iniciar sesión
+                    }
+                </button>
+
+            </form>
+
+            <footer class="login-footer">
+                <span>Acceso seguro</span>
+                <span>Home Desk</span>
+            </footer>
+
+        </div>
+
+    </main>
+
+</div>
