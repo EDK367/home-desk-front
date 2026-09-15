@@ -72,13 +72,19 @@ export class Login {
 
     switch (role) {
       case 'ADMINISTRATION':
-        this.router.navigate(['/admin']);
+        this.router.navigate(['/admin/dashboard']);
         break;
       case 'PURCHASING':
-        this.router.navigate(['/purchasing']);
+        this.router.navigate(['/purchasing/dashboard']);
+        break;
+      case 'INVENTORY':
+        this.router.navigate(['/inventory/dashboard']);
+        break;
+      case 'SALES':
+        this.router.navigate(['/sales/dashboard']);
         break;
       default:
-        this.router.navigate(['/']);
+        this.router.navigate(['/admin/dashboard']);
         break;
     }
   }

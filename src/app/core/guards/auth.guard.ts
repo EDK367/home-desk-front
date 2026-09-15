@@ -19,14 +19,21 @@ export const authGuard: CanActivateFn = () => {
 
 export const guestGuard: CanActivateFn = () => {
   const tokenService = inject(TokenService);
+  const sessionService = inject(SessionService);
   const router = inject(Router);
 
-  if (!tokenService.hasToken()) {
+  if (!tokenService.hasToken() || !sessionService.getUser()) {
+    tokenService.clearTokens();
+    sessionService.clearUser();
     return true;
   }
 
   // si tiene token lo manda a la pagina, tiene que hacer  logout
-  return router.createUrlTree(['/']);
+  const role = sessionService.getRole();
+  if (role === 'PURCHASING') return router.createUrlTree(['/purchasing/dashboard']);
+  if (role === 'INVENTORY') return router.createUrlTree(['/inventory/dashboard']);
+  if (role === 'SALES') return router.createUrlTree(['/sales/dashboard']);
+  return router.createUrlTree(['/admin/dashboard']);
 };
 
 export const roleGuard = (allowedRoles: string[]): CanActivateFn => () => {
@@ -37,5 +44,5 @@ export const roleGuard = (allowedRoles: string[]): CanActivateFn => () => {
     return true;
   }
 
-  return router.createUrlTree(['/']);
+  return router.createUrlTree(['/login']);
 };
