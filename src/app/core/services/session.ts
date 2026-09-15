@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { UserSummaryResponse } from '../models/auth.model';
+import { UserSummaryResponse } from '../models/auth';
 
 const USER_KEY = 'hd_user';
 

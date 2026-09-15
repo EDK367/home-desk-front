@@ -3,7 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
-import { ApiResponse } from '../models/response.model';
+import { ApiResponse } from '../models/response';
 
 
 // clase generica para el consumo de la api respondiendo con una mima estructura 

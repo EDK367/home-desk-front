@@ -2,8 +2,8 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 
 import { ApiService } from './api';
-import { LoginRequest, LoginResponse } from '../models/auth.model';
-import { ApiResponse } from '../models/response.model';
+import { LoginRequest, LoginResponse } from '../models/auth';
+import { ApiResponse } from '../models/response';
 
 @Injectable({
   providedIn: 'root'

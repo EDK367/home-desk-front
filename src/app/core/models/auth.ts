@@ -21,4 +21,13 @@ export interface LoginResponse {
     user: UserSummaryResponse
 }
 
+export interface LogoutRequest { 
+    /**
+     * Refresh token de la sesión a revocar
+     */
+    refreshToken?: string;
+}
 
+export interface RefreshTokenRequest { 
+    refreshToken: string;
+}
