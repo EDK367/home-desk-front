@@ -18,3 +18,13 @@ export interface UserResponse {
     createdAt?: string;
     updatedAt?: string;
 }
+
+export interface UserSummaryResponse {
+    id?: string;
+    employeeNumber?: number;
+    username?: string;
+    fullName?: string;
+    email?: string;
+    role?: RoleResponse;
+    isActive?: boolean;
+}

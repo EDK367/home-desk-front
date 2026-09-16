@@ -31,4 +31,7 @@ export class ApiService {
     return this.http.delete<ApiResponse<T>>(`${this.baseUrl}${path}`);
   }
 
+  protected patch<T>(path: string, body?: unknown, params?: HttpParams): Observable<ApiResponse<T>> {
+    return this.http.patch<ApiResponse<T>>(`${this.baseUrl}${path}`, body, { params });
+  }
 }

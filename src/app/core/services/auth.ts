@@ -2,7 +2,8 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 
 import { ApiService } from './api';
-import { LoginRequest, LoginResponse, LogoutRequest } from '../models/auth';
+import { LoginRequest, LoginResponse, LogoutRequest, RefreshTokenRequest } from '../models/auth';
+import { UserResponse } from '../models/user';
 import { ApiResponse } from '../models/response';
 
 @Injectable({
@@ -16,6 +17,14 @@ export class AuthService extends ApiService {
 
   logout(body?: LogoutRequest): Observable<ApiResponse<void>> {
     return this.post<void>('/auth/logout', body ?? {});
+  }
+
+  refreshToken(body: RefreshTokenRequest): Observable<ApiResponse<LoginResponse>> {
+    return this.post<LoginResponse>('/auth/refresh', body);
+  }
+
+  getCurrentUser(): Observable<ApiResponse<UserResponse>> {
+    return this.get<UserResponse>('/auth/me');
   }
 
 }
