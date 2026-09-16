@@ -9,14 +9,14 @@
       </svg>
     </div>
     <div class="brand-text">
-      <h2 class="brand-title">HomeDesk Mini ERP</h2>
-      <p class="brand-subtitle">Furniture Craft & ERP</p>
+      <h2 class="brand-title">HomeDesk</h2>
+      <p class="brand-subtitle">Mobiliario de Diseño & Gestión Integral</p>
     </div>
   </div>
 
   @if (menuConfig().showActionBtn) {
     <div class="action-btn-wrapper">
-      <a [routerLink]="menuConfig().actionBtnRoute" class="btn-action">
+      <a [routerLink]="menuConfig().actionBtnRoute" [queryParams]="menuConfig().actionBtnRoute === '/admin/users' ? { action: 'new' } : null" class="btn-action">
         {{ menuConfig().actionBtnLabel }}
       </a>
     </div>
@@ -31,9 +31,10 @@
           @for (item of section.items; track item.route) {
             <li class="menu-item">
               <a 
-                [routerLink]="item.route" 
-                routerLinkActive="active" 
-                class="menu-link">
+              [routerLink]="item.route" 
+              routerLinkActive="active" 
+              (click)="onMenuClick(item.route)"
+              class="menu-link">
                 
                 <span class="item-icon">
                   @switch (item.icon) {

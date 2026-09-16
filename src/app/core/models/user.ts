@@ -2,7 +2,7 @@ import { RoleResponse } from "./role";
 
 export interface UserRequest {
     fullName: string;
-    password: string;
+    password?: string;
     email: string;
     roleId: number;
 }

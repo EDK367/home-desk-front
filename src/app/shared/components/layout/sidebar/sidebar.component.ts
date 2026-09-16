@@ -26,6 +26,11 @@ export class SidebarComponent {
     return ROLE_MENUS[role] || ROLE_MENUS['ADMINISTRATION'];
   });
 
+  // carga y navegacion al presionar en el menu
+  onMenuClick(route: string): void {
+    this.router.navigateByUrl(route);
+  }
+
   onLogout(): void {
     const refreshToken = this.tokenService.getRefreshToken() || undefined;
 

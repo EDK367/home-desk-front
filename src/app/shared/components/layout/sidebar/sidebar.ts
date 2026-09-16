@@ -23,7 +23,7 @@ export const ROLE_MENUS: Record<string, RoleMenuConfig> = {
   ADMINISTRATION: {
     showActionBtn: true,
     actionBtnLabel: 'Nuevo Usuario',
-    actionBtnRoute: '/admin/users/new',
+    actionBtnRoute: '/admin/users',
     sections: [
       {
         title: 'PRINCIPAL',
@@ -41,6 +41,7 @@ export const ROLE_MENUS: Record<string, RoleMenuConfig> = {
     ]
   },
 
+  // elementos para el de compras
   PURCHASING: {
     showActionBtn: true,
     actionBtnLabel: 'Nueva Compra',
@@ -62,6 +63,7 @@ export const ROLE_MENUS: Record<string, RoleMenuConfig> = {
     ]
   },
 
+  // elementos para el de inventario
   INVENTORY: {
     showActionBtn: true,
     actionBtnLabel: 'Nuevo Producto',
@@ -83,6 +85,7 @@ export const ROLE_MENUS: Record<string, RoleMenuConfig> = {
     ]
   },
 
+  // inventario para los vendedores
   SALES: {
     showActionBtn: true,
     actionBtnLabel: 'Nueva Venta',
