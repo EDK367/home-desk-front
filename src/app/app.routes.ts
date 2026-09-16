@@ -27,6 +27,21 @@ export const routes: Routes = [
           import('./features/admin/pages/users/users').then(m => m.Users),
       },
       {
+        path: 'roles',
+        loadComponent: () =>
+          import('./features/admin/pages/roles/roles').then(m => m.Roles),
+      },
+      {
+        path: 'profile',
+        loadComponent: () =>
+          import('./features/admin/pages/profile/profile').then(m => m.Profile),
+      },
+      {
+        path: 'perfil',
+        redirectTo: 'profile',
+        pathMatch: 'full'
+      },
+      {
         path: '',
         redirectTo: 'dashboard',
         pathMatch: 'full'

@@ -135,7 +135,26 @@ export class Users implements OnInit, OnDestroy {
   loadUsers(): void {
     const pageIndex = Math.max(0, this.currentPage - 1);
 
-    this.loading = true;
+    const cached = this.userService.getCachedUsers(
+      pageIndex,
+      this.pageSize,
+      this.sortField,
+      this.sortOrder,
+      this.includeInactive
+    );
+
+    if (cached && cached.content && cached.content.length > 0) {
+      this.allUsers = cached.content;
+      this.filteredUsers = [...cached.content];
+      this.totalElements = cached.totalElements ?? cached.content.length;
+      this.totalPages = Math.max(1, cached.totalPages ?? 1);
+      const pageNum = (cached as any).number ?? cached.pageNumber ?? pageIndex;
+      this.currentPage = pageNum + 1;
+      this.loading = false;
+      this.applyFilter();
+    } else {
+      this.loading = true;
+    }
 
     this.userService
       .getUsers(
@@ -169,6 +188,7 @@ export class Users implements OnInit, OnDestroy {
               pageIndex;
 
             this.currentPage = pageNum + 1;
+            this.applyFilter();
           } else {
             this.allUsers = [];
             this.filteredUsers = [];
@@ -185,10 +205,12 @@ export class Users implements OnInit, OnDestroy {
 
           this.loading = false;
           this.cdr.detectChanges();
-          this.allUsers = [];
-          this.filteredUsers = [];
-          this.totalElements = 0;
-          this.totalPages = 1;
+          if (this.allUsers.length === 0) {
+            this.allUsers = [];
+            this.filteredUsers = [];
+            this.totalElements = 0;
+            this.totalPages = 1;
+          }
         }
       });
   }

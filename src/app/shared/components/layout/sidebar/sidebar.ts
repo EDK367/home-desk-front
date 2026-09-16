@@ -35,7 +35,8 @@ export const ROLE_MENUS: Record<string, RoleMenuConfig> = {
         title: 'ADMINISTRACIÓN',
         items: [
           { label: 'Usuarios', icon: 'users', route: '/admin/users' },
-          { label: 'Roles', icon: 'user-gear', route: '/admin/roles' }
+          { label: 'Roles', icon: 'user-gear', route: '/admin/roles' },
+          { label: 'Mi Perfil', icon: 'user', route: '/admin/profile' }
         ]
       }
     ]

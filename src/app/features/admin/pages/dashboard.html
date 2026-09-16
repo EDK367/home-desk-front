@@ -1,1 +1,145 @@
-<p>dashboard works!</p>
+<div class="dashboard-container">
+  <header class="page-header">
+    <div class="header-titles">
+      <h1 class="page-title">Panel de Administración</h1>
+      <p class="page-subtitle">Bienvenido al sistema, {{ user?.fullName || 'Administrador' }}. Resumen general y accesos rápidos.</p>
+    </div>
+    <div class="header-actions">
+      <a routerLink="/admin/users" [queryParams]="{ action: 'new' }" class="btn-primary-action">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19"/>
+          <line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        <span>Nuevo usuario</span>
+      </a>
+    </div>
+  </header>
+
+  <section class="welcome-banner">
+    <div class="banner-text">
+      <h2>¡Hola, {{ userFirstName }}!</h2>
+      <p>Tienes acceso completo al módulo de administración central de HomeDesk. Supervisa usuarios, roles y configuración del sistema.</p>
+    </div>
+    <div class="banner-badge">
+      <span class="role-pill">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        </svg>
+        ADMINISTRATION
+      </span>
+      <span class="status-pill">
+        <span class="status-dot"></span>
+        Sesión activa
+      </span>
+    </div>
+  </section>
+
+  <section class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon icon-users">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+      </div>
+      <div class="stat-info">
+        <span class="stat-label">Usuarios en el Sistema</span>
+        <strong class="stat-value">{{ loadingStats ? '...' : totalUsers }}</strong>
+        <span class="stat-hint">Cuentas registradas en backend</span>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon icon-roles">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <circle cx="19" cy="11" r="2"/>
+        </svg>
+      </div>
+      <div class="stat-info">
+        <span class="stat-label">Roles Definidos</span>
+        <strong class="stat-value">{{ totalRoles > 0 ? totalRoles : '4' }}</strong>
+        <span class="stat-hint">Niveles de autorización</span>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon icon-account">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+        </svg>
+      </div>
+      <div class="stat-info">
+        <span class="stat-label">Código de Empleado</span>
+        <strong class="stat-value">#{{ user?.employeeNumber || '1' }}</strong>
+        <span class="stat-hint">&#64;{{ user?.username || 'admin' }}</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="shortcuts-section">
+    <h3 class="section-heading">Accesos Directos</h3>
+    <div class="shortcuts-grid">
+      <a routerLink="/admin/users" class="shortcut-card">
+        <div class="shortcut-icon icon-users">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
+        </div>
+        <div class="shortcut-text">
+          <h4>Gestión de Usuarios</h4>
+          <p>Consulta, crea, actualiza datos y administra el estado de los usuarios operativos.</p>
+        </div>
+        <span class="shortcut-arrow">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+        </span>
+      </a>
+
+      <a routerLink="/admin/roles" class="shortcut-card">
+        <div class="shortcut-icon icon-roles">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <circle cx="19" cy="11" r="2"/>
+          </svg>
+        </div>
+        <div class="shortcut-text">
+          <h4>Roles del Sistema</h4>
+          <p>Revisa la lista de roles del backend y las áreas funcionales asignadas a cada uno.</p>
+        </div>
+        <span class="shortcut-arrow">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+        </span>
+      </a>
+
+      <a routerLink="/admin/profile" class="shortcut-card">
+        <div class="shortcut-icon icon-account">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+        </div>
+        <div class="shortcut-text">
+          <h4>Mi Perfil</h4>
+          <p>Consulta la información detallada de tu cuenta de administrador y sesión activa.</p>
+        </div>
+        <span class="shortcut-arrow">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+        </span>
+      </a>
+    </div>
+  </section>
+</div>

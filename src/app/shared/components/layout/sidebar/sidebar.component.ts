@@ -28,7 +28,9 @@ export class SidebarComponent {
 
   // carga y navegacion al presionar en el menu
   onMenuClick(route: string): void {
-    this.router.navigateByUrl(route);
+    if (this.router.url.split('?')[0] !== route.split('?')[0]) {
+      this.router.navigateByUrl(route);
+    }
   }
 
   onLogout(): void {
