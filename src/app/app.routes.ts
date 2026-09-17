@@ -62,6 +62,31 @@ export const routes: Routes = [
           import('./features/purchasing/pages/dashboard').then(m => m.Dashboard),
       },
       {
+        path: 'purchases',
+        loadComponent: () =>
+          import('./features/purchasing/pages/purchases/purchases').then(m => m.Purchases),
+      },
+      {
+        path: 'new-purchase',
+        redirectTo: 'purchases',
+        pathMatch: 'full'
+      },
+      {
+        path: 'providers',
+        loadComponent: () =>
+          import('./features/purchasing/pages/providers/providers').then(m => m.Providers),
+      },
+      {
+        path: 'profile',
+        loadComponent: () =>
+          import('./features/purchasing/pages/profile/profile').then(m => m.Profile),
+      },
+      {
+        path: 'perfil',
+        redirectTo: 'profile',
+        pathMatch: 'full'
+      },
+      {
         path: '',
         redirectTo: 'dashboard',
         pathMatch: 'full'

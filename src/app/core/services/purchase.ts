@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { tap } from 'rxjs/operators';
 
 import { ApiService } from './api';
 import {
@@ -17,6 +18,23 @@ import { ApiResponse } from '../models/response';
   providedIn: 'root'
 })
 export class PurchaseService extends ApiService {
+  private cache = new Map<string, PageResponse<PurchaseResponse>>();
+  private lastLoadedResponse: PageResponse<PurchaseResponse> | null = null;
+
+  getCachedPurchases(
+    page: number,
+    size: number,
+    sortField: string,
+    sortOrder: string
+  ): PageResponse<PurchaseResponse> | null {
+    const key = `${page}_${size}_${sortField}_${sortOrder}`;
+    return this.cache.get(key) || this.lastLoadedResponse || null;
+  }
+
+  clearCache(): void {
+    this.cache.clear();
+    this.lastLoadedResponse = null;
+  }
 
   getPurchases(
     page: number = 0,
@@ -29,7 +47,16 @@ export class PurchaseService extends ApiService {
       .set('size', size.toString())
       .set('sort', `${sortField},${sortOrder}`);
 
-    return this.get<PageResponse<PurchaseResponse>>('/purchases', params);
+    const key = `${page}_${size}_${sortField}_${sortOrder}`;
+
+    return this.get<PageResponse<PurchaseResponse>>('/purchases', params).pipe(
+      tap(res => {
+        if (res?.data) {
+          this.cache.set(key, res.data);
+          this.lastLoadedResponse = res.data;
+        }
+      })
+    );
   }
 
   getPurchaseById(id: number): Observable<ApiResponse<PurchaseResponse>> {
@@ -37,14 +64,17 @@ export class PurchaseService extends ApiService {
   }
 
   createPurchase(purchase: PurchaseRequest): Observable<ApiResponse<PurchaseResponse>> {
+    this.clearCache();
     return this.post<PurchaseResponse>('/purchases', purchase);
   }
 
   cancelPurchase(id: number): Observable<ApiResponse<void>> {
+    this.clearCache();
     return this.delete<void>(`/purchases/${id}`);
   }
 
   updatePurchaseStatus(id: number, req: PurchaseStatusChangeRequest): Observable<ApiResponse<PurchaseResponse>> {
+    this.clearCache();
     return this.patch<PurchaseResponse>(`/purchases/${id}/status`, req);
   }
 

@@ -46,7 +46,7 @@ export const ROLE_MENUS: Record<string, RoleMenuConfig> = {
   PURCHASING: {
     showActionBtn: true,
     actionBtnLabel: 'Nueva Compra',
-    actionBtnRoute: '/purchasing/new-purchase',
+    actionBtnRoute: '/purchasing/purchases',
     sections: [
       {
         title: 'PRINCIPAL',
@@ -55,10 +55,11 @@ export const ROLE_MENUS: Record<string, RoleMenuConfig> = {
         ]
       },
       {
-        title: 'COMPRAS',
+        title: 'COMPRAS & ABASTECIMIENTO',
         items: [
           { label: 'Compras', icon: 'cart', route: '/purchasing/purchases' },
-          { label: 'Proveedores', icon: 'truck', route: '/purchasing/providers' }
+          { label: 'Proveedores', icon: 'truck', route: '/purchasing/providers' },
+          { label: 'Mi Perfil', icon: 'user', route: '/purchasing/profile' }
         ]
       }
     ]

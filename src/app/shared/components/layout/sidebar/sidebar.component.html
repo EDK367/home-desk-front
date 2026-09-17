@@ -16,7 +16,7 @@
 
   @if (menuConfig().showActionBtn) {
     <div class="action-btn-wrapper">
-      <a [routerLink]="menuConfig().actionBtnRoute" [queryParams]="menuConfig().actionBtnRoute === '/admin/users' ? { action: 'new' } : null" class="btn-action">
+      <a [routerLink]="menuConfig().actionBtnRoute" [queryParams]="(menuConfig().actionBtnRoute === '/admin/users' || menuConfig().actionBtnRoute === '/purchasing/purchases') ? { action: 'new' } : null" class="btn-action">
         {{ menuConfig().actionBtnLabel }}
       </a>
     </div>

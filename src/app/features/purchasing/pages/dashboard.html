@@ -1,1 +1,299 @@
-<p>dashboard purchasing!</p>
+<div class="dashboard-container">
+  <header class="page-header">
+    <div class="header-titles">
+      <h1 class="page-title">Panel de Compras & Abastecimiento</h1>
+      <p class="page-subtitle">Bienvenido al sistema, {{ user?.fullName || 'Comprador' }}. Resumen de órdenes, proveedores y existencias.</p>
+    </div>
+    <div class="header-actions">
+      <a routerLink="/purchasing/purchases" [queryParams]="{ action: 'new' }" class="btn-primary-action">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19"/>
+          <line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        <span>Nueva orden de compra</span>
+      </a>
+    </div>
+  </header>
+
+  <section class="welcome-banner">
+    <div class="banner-text">
+      <h2>¡Hola, {{ userFirstName }}!</h2>
+      <p>Supervisa el ciclo de abastecimiento de HomeDesk: emisión de órdenes, negociación con proveedores y recepción de mercadería para alimentar el inventario.</p>
+    </div>
+    <div class="banner-badge">
+      <span class="role-pill">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <circle cx="8" cy="21" r="1"/>
+          <circle cx="19" cy="21" r="1"/>
+          <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/>
+        </svg>
+        PURCHASING
+      </span>
+      <span class="status-pill">
+        <span class="status-dot"></span>
+        Sesión activa
+      </span>
+    </div>
+  </section>
+
+  <!-- Métricas KPI -->
+  <section class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon icon-purchases">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="8" cy="21" r="1"/>
+          <circle cx="19" cy="21" r="1"/>
+          <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/>
+        </svg>
+      </div>
+      <div class="stat-info">
+        <span class="stat-label">Órdenes de Compra</span>
+        <strong class="stat-value">{{ loadingStats ? '...' : totalPurchases }}</strong>
+        <span class="stat-hint">Compras registradas en sistema</span>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon icon-suppliers">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/>
+          <path d="M15 18H9"/>
+          <path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.62l-3.48-4.35A1 1 0 0 0 17.52 8H14"/>
+          <circle cx="7" cy="18" r="2"/>
+          <circle cx="17" cy="18" r="2"/>
+        </svg>
+      </div>
+      <div class="stat-info">
+        <span class="stat-label">Proveedores Activos</span>
+        <strong class="stat-value">{{ loadingStats ? '...' : totalSuppliers }}</strong>
+        <span class="stat-hint">Compañías registradas</span>
+      </div>
+    </div>
+
+    <div class="stat-card" [class.stat-warning]="lowStockCount > 0">
+      <div class="stat-icon icon-alerts">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+          <line x1="12" y1="9" x2="12" y2="13"/>
+          <line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+      </div>
+      <div class="stat-info">
+        <span class="stat-label">Alertas de Stock Bajo</span>
+        <strong class="stat-value">{{ loadingStats ? '...' : lowStockCount }}</strong>
+        <span class="stat-hint">Productos que requieren reposición</span>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon icon-investment">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="12" y1="1" x2="12" y2="23"/>
+          <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+        </svg>
+      </div>
+      <div class="stat-info">
+        <span class="stat-label">Inversión en Compras</span>
+        <strong class="stat-value text-compact">{{ loadingStats ? '...' : formatCurrency(totalSpending) }}</strong>
+        <span class="stat-hint">Volumen de compras recientes</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Sección de Alertas de Reposición Crítica -->
+  @if (lowStockItems.length > 0) {
+    <section class="section-card alert-section">
+      <div class="section-card-header">
+        <div class="section-header-title">
+          <span class="alert-icon-tag">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+              <line x1="12" y1="9" x2="12" y2="13"/>
+              <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+          </span>
+          <div>
+            <h3>Productos con Existencias Críticas</h3>
+            <p>Estos productos están en el nivel mínimo o agotados y requieren órdenes de compra urgentes.</p>
+          </div>
+        </div>
+        <a routerLink="/purchasing/purchases" [queryParams]="{ action: 'new' }" class="btn-sm-action">
+          Emitir orden de compra
+        </a>
+      </div>
+
+      <div class="table-responsive">
+        <table class="compact-table">
+          <thead>
+            <tr>
+              <th>Producto</th>
+              <th>SKU</th>
+              <th>Stock Actual</th>
+              <th>Stock Mínimo Requerido</th>
+              <th>Estado</th>
+              <th class="text-right">Acción</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of lowStockItems; track item.id) {
+              <tr>
+                <td class="font-medium text-main">{{ item.product?.name || 'Producto #' + (item.product?.id || item.id) }}</td>
+                <td class="font-mono text-muted">{{ item.product?.sku || '—' }}</td>
+                <td>
+                  <span class="stock-pill" [class.stock-zero]="(item.quantityOnHand ?? 0) <= 0">
+                    {{ item.quantityOnHand ?? 0 }} unidades
+                  </span>
+                </td>
+                <td class="text-muted">{{ item.product?.minStockLevel ?? 0 }} unidades</td>
+                <td>
+                  @if ((item.quantityOnHand ?? 0) <= 0) {
+                    <span class="badge-critical">Agotado</span>
+                  } @else {
+                    <span class="badge-low">Stock Bajo</span>
+                  }
+                </td>
+                <td class="text-right">
+                  <a routerLink="/purchasing/purchases" [queryParams]="{ action: 'new', productId: item.product?.id }" class="btn-table-action">
+                    Comprar
+                  </a>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  }
+
+  <!-- Sección de Órdenes Recientes -->
+  <section class="section-card">
+    <div class="section-card-header">
+      <div>
+        <h3>Últimas Órdenes de Compra</h3>
+        <p>Registro de las órdenes más recientes emitidas a proveedores.</p>
+      </div>
+      <a routerLink="/purchasing/purchases" class="btn-link">
+        Ver todas las compras &rarr;
+      </a>
+    </div>
+
+    @if (loadingRecent) {
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <p>Cargando órdenes recientes...</p>
+      </div>
+    } @else if (recentPurchases.length === 0) {
+      <div class="empty-state">
+        <p>No se registran compras previas.</p>
+        <a routerLink="/purchasing/purchases" [queryParams]="{ action: 'new' }" class="btn-sm-action">Crear la primera orden</a>
+      </div>
+    } @else {
+      <div class="table-responsive">
+        <table class="compact-table">
+          <thead>
+            <tr>
+              <th>Folio</th>
+              <th>Proveedor</th>
+              <th>Fecha de Compra</th>
+              <th>Total</th>
+              <th>Estado</th>
+              <th class="text-right">Detalle</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (purchase of recentPurchases; track purchase.id) {
+              <tr>
+                <td class="font-mono font-medium text-main">#{{ purchase.id }}</td>
+                <td>
+                  <div class="supplier-cell">
+                    <span class="supplier-name">{{ purchase.supplier?.name || 'Proveedor' }}</span>
+                    @if (purchase.supplier?.taxNumber) {
+                      <span class="supplier-tax">NIT: {{ purchase.supplier?.taxNumber }}</span>
+                    }
+                  </div>
+                </td>
+                <td class="text-muted">{{ formatDate(purchase.purchaseDate) }}</td>
+                <td class="font-semibold text-main">{{ formatCurrency(purchase.totalAmount) }}</td>
+                <td>
+                  <span class="status-badge" [ngClass]="getStatusBadgeClass(purchase.status?.name)">
+                    <span class="status-dot"></span>
+                    {{ getStatusLabel(purchase.status?.name) }}
+                  </span>
+                </td>
+                <td class="text-right">
+                  <a routerLink="/purchasing/purchases" [queryParams]="{ viewId: purchase.id }" class="btn-table-action">
+                    Ver orden
+                  </a>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </section>
+
+  <!-- Accesos directos -->
+  <section class="shortcuts-section">
+    <h3 class="section-heading">Accesos Directos del Módulo</h3>
+    <div class="shortcuts-grid">
+      <a routerLink="/purchasing/purchases" class="shortcut-card">
+        <div class="shortcut-icon icon-purchases">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="8" cy="21" r="1"/>
+            <circle cx="19" cy="21" r="1"/>
+            <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/>
+          </svg>
+        </div>
+        <div class="shortcut-text">
+          <h4>Órdenes de Compra</h4>
+          <p>Consulta el historial de compras, emite nuevas órdenes y gestiona los estados de recepción.</p>
+        </div>
+        <span class="shortcut-arrow">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+        </span>
+      </a>
+
+      <a routerLink="/purchasing/providers" class="shortcut-card">
+        <div class="shortcut-icon icon-suppliers">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/>
+            <path d="M15 18H9"/>
+            <path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.62l-3.48-4.35A1 1 0 0 0 17.52 8H14"/>
+            <circle cx="7" cy="18" r="2"/>
+            <circle cx="17" cy="18" r="2"/>
+          </svg>
+        </div>
+        <div class="shortcut-text">
+          <h4>Catálogo de Proveedores</h4>
+          <p>Directorio de proveedores, información de contacto fiscal y productos asociados con sus costos.</p>
+        </div>
+        <span class="shortcut-arrow">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+        </span>
+      </a>
+
+      <a routerLink="/purchasing/profile" class="shortcut-card">
+        <div class="shortcut-icon icon-account">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+        </div>
+        <div class="shortcut-text">
+          <h4>Mi Perfil</h4>
+          <p>Consulta los datos de tu cuenta de comprador, código de empleado y sesión activa.</p>
+        </div>
+        <span class="shortcut-arrow">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+        </span>
+      </a>
+    </div>
+  </section>
+</div>
