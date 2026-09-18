@@ -1,6 +1,10 @@
 import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { MatCardModule } from '@angular/material/card';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatChipsModule } from '@angular/material/chips';
 import { SessionService } from '../../../core/services/session';
 import { UserService } from '../../../core/services/user';
 import { RoleService } from '../../../core/services/role';
@@ -9,7 +13,7 @@ import { UserSummaryResponse } from '../../../core/models/auth';
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, MatCardModule, MatButtonModule, MatIconModule, MatChipsModule],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.css',
 })

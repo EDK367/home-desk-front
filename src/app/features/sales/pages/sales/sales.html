@@ -1,0 +1,637 @@
+<div class="sales-container">
+  <header class="page-header">
+    <div class="header-titles">
+      <h1 class="page-title">Gestión de Ventas & Facturación</h1>
+    </div>
+    <div class="header-actions">
+      <button mat-flat-button color="primary" (click)="openCreateModal()">
+        <mat-icon>add_shopping_cart</mat-icon>
+        <span>Nueva Venta</span>
+      </button>
+    </div>
+  </header>
+
+  <mat-card class="toolbar-card" appearance="outlined">
+    <mat-card-content class="p-4 flex justify-between items-center gap-4 flex-wrap">
+      <mat-form-field appearance="outline" class="flex-1 max-w-lg mb-[-1.25em]">
+        <mat-label>Buscar venta</mat-label>
+        <mat-icon matPrefix>search</mat-icon>
+        <input 
+          matInput
+          type="text" 
+          [(ngModel)]="searchTerm" 
+          (ngModelChange)="onSearchChange()" 
+          placeholder="Buscar por factura, cliente, NIT o vendedor..." 
+        />
+        @if (searchTerm) {
+          <button mat-icon-button matSuffix (click)="clearSearch()" title="Limpiar búsqueda">
+            <mat-icon>close</mat-icon>
+          </button>
+        }
+      </mat-form-field>
+
+      <div class="flex items-center gap-3">
+        <mat-chip class="results-badge">
+          Total: {{ totalElements }} {{ totalElements === 1 ? 'registro' : 'registros' }}
+        </mat-chip>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card class="controls-top-card" appearance="outlined">
+    <mat-card-content class="p-3 flex justify-between items-center gap-4 flex-wrap">
+      <div class="flex items-center gap-3 flex-wrap">
+        <mat-form-field appearance="outline" class="w-44 mb-[-1.25em]">
+          <mat-label>Ordenar por</mat-label>
+          <mat-select [ngModel]="sortField" (ngModelChange)="onSortFieldChange($event)">
+            <mat-option value="saleDate">Fecha de venta</mat-option>
+            <mat-option value="totalAmount">Monto total</mat-option>
+            <mat-option value="invoiceNumber">Número de factura</mat-option>
+            <mat-option value="id">Folio de venta</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="w-40 mb-[-1.25em]">
+          <mat-label>Dirección</mat-label>
+          <mat-select [ngModel]="sortOrder" (ngModelChange)="onSortOrderChange($event)">
+            <mat-option value="DESC">Descendente</mat-option>
+            <mat-option value="ASC">Ascendente</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="w-44 mb-[-1.25em]">
+          <mat-label>Estado de Venta</mat-label>
+          <mat-select [ngModel]="selectedStatusFilter" (ngModelChange)="onStatusFilterChange($event)">
+            <mat-option value="ALL">Todos los estados</mat-option>
+            @for (st of statuses; track st.id) {
+              <mat-option [value]="st.id != null ? st.id.toString() : ''">{{ st.name }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="w-48 mb-[-1.25em]">
+          <mat-label>Cliente</mat-label>
+          <mat-select [ngModel]="selectedCustomerFilter" (ngModelChange)="onCustomerFilterChange($event)">
+            <mat-option value="ALL">Todos los clientes</mat-option>
+            @for (c of customers; track c.id) {
+              <mat-option [value]="c.id != null ? c.id.toString() : ''">{{ c.fullName }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="w-36 mb-[-1.25em]">
+          <mat-label>Por página</mat-label>
+          <mat-select [ngModel]="pageSize" (ngModelChange)="onPageSizeChange($event)">
+            <mat-option [value]="5">5 por página</mat-option>
+            <mat-option [value]="10">10 por página</mat-option>
+            <mat-option [value]="20">20 por página</mat-option>
+            <mat-option [value]="50">50 por página</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <span class="text-xs text-gray-500 font-medium">Página <strong>{{ currentPage }}</strong> de <strong>{{ totalPages }}</strong></span>
+        <div class="flex items-center gap-1">
+          <button mat-icon-button (click)="goToPage(1)" [disabled]="currentPage === 1" title="Primera página">
+            <mat-icon>first_page</mat-icon>
+          </button>
+          <button mat-icon-button (click)="goToPage(currentPage - 1)" [disabled]="currentPage === 1" title="Anterior">
+            <mat-icon>chevron_left</mat-icon>
+          </button>
+          @for (p of pagesArray; track p) {
+            <button mat-stroked-button (click)="goToPage(p)" [color]="p === currentPage ? 'primary' : ''" class="btn-page-num">
+              {{ p }}
+            </button>
+          }
+          <button mat-icon-button (click)="goToPage(currentPage + 1)" [disabled]="currentPage >= totalPages" title="Siguiente">
+            <mat-icon>chevron_right</mat-icon>
+          </button>
+          <button mat-icon-button (click)="goToPage(totalPages)" [disabled]="currentPage >= totalPages" title="Última página">
+            <mat-icon>last_page</mat-icon>
+          </button>
+        </div>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card class="table-card" appearance="outlined">
+    <mat-card-content>
+      @if (loading) {
+        <div class="loading-state">
+          <mat-spinner diameter="40"></mat-spinner>
+          <p>Cargando facturas de venta...</p>
+        </div>
+      } @else if (filteredSales.length === 0) {
+        <div class="empty-state">
+          <mat-icon class="empty-icon">receipt_long</mat-icon>
+          <h3 class="text-base font-bold text-gray-800">No se encontraron ventas</h3>
+          <p class="text-sm text-gray-500">No existen registros que coincidan con los filtros aplicados.</p>
+          @if (searchTerm || selectedStatusFilter !== 'ALL' || selectedCustomerFilter !== 'ALL') {
+            <button mat-stroked-button (click)="clearSearch(); selectedStatusFilter = 'ALL'; selectedCustomerFilter = 'ALL'; loadSales()">
+              Restablecer filtros
+            </button>
+          }
+        </div>
+      } @else {
+        <div class="responsive-table-container">
+          <table class="users-table">
+            <thead>
+              <tr>
+                <th>Factura</th>
+                <th>Cliente</th>
+                <th>Fecha de Venta</th>
+                <th>Vendedor</th>
+                <th>Subtotal</th>
+                <th>IVA (12%)</th>
+                <th>Total</th>
+                <th>Estado</th>
+                <th class="text-right">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (sale of filteredSales; track sale.id) {
+                <tr [class.opacity-60]="sale.status?.name === 'CANCELADA'">
+                  <td class="font-mono font-bold text-gray-900">
+                    {{ sale.invoiceNumber || '#' + sale.id }}
+                  </td>
+                  <td>
+                    <div class="entity-cell">
+                      <div class="entity-avatar bg-purple-100 text-purple-800">
+                        {{ (sale.customer?.fullName || 'C').charAt(0).toUpperCase() }}
+                      </div>
+                      <div>
+                        <div class="font-medium text-gray-900">{{ sale.customer?.fullName || 'Consumidor Final' }}</div>
+                        <div class="text-xs text-gray-400 font-mono">NIT: {{ sale.customer?.taxNumber || 'C/F' }}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="text-sm text-gray-600">{{ formatDate(sale.saleDate) }}</td>
+                  <td>
+                    <div class="text-sm font-medium text-gray-900">{{ sale.user?.fullName || 'Ventas' }}</div>
+                    <div class="text-xs text-gray-400 font-mono">#{{ sale.user?.employeeNumber || '1' }}</div>
+                  </td>
+                  <td class="text-sm text-gray-600 font-mono">{{ formatCurrency(sale.subtotal) }}</td>
+                  <td class="text-sm text-gray-600 font-mono">{{ formatCurrency(sale.taxAmount) }}</td>
+                  <td class="text-sm font-bold text-emerald-700 font-mono">{{ formatCurrency(sale.totalAmount) }}</td>
+                  <td>
+                    <span class="status-badge" [ngClass]="getStatusBadgeClass(sale.status?.name)">
+                      <span class="status-dot"></span>
+                      {{ getStatusLabel(sale.status?.name) }}
+                    </span>
+                  </td>
+                  <td class="text-right">
+                    <div class="actions-group">
+                      <button mat-icon-button color="primary" (click)="downloadInvoicePdf(sale)" title="Descargar Factura en PDF">
+                        <mat-icon>picture_as_pdf</mat-icon>
+                      </button>
+                      <button mat-icon-button (click)="openDetailModal(sale)" title="Ver detalle de la venta">
+                        <mat-icon>visibility</mat-icon>
+                      </button>
+                      @if (sale.status?.name !== 'CANCELADA') {
+                        <button mat-icon-button (click)="openStatusModal(sale)" title="Cambiar estado">
+                          <mat-icon>sync_alt</mat-icon>
+                        </button>
+                      }
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </mat-card-content>
+  </mat-card>
+
+  @if (isCreateModalOpen) {
+    <div class="modal-backdrop" (click)="closeCreateModal()">
+      <mat-card class="modal-card modal-large" (click)="$event.stopPropagation()">
+        <header class="modal-header">
+          <div class="modal-title-group">
+            <div class="modal-icon-badge">
+              <mat-icon>point_of_sale</mat-icon>
+            </div>
+            <div>
+              <h2 class="modal-title">Registrar y Facturar Venta</h2>
+            </div>
+          </div>
+
+          <button mat-icon-button (click)="closeCreateModal()" title="Cerrar modal">
+            <mat-icon>close</mat-icon>
+          </button>
+        </header>
+
+        <form [formGroup]="saleForm" (ngSubmit)="saveSale()" class="modal-body">
+          @if (modalError) {
+            <div class="modal-error-banner">
+              <mat-icon color="warn">error</mat-icon>
+              <span>{{ modalError }}</span>
+            </div>
+          }
+
+          <div class="form-grid-3">
+            <mat-form-field appearance="outline">
+              <mat-label>Cliente *</mat-label>
+              <mat-select formControlName="customerId">
+                <mat-option [value]="null" disabled>Seleccione cliente...</mat-option>
+                @for (c of customers; track c.id) {
+                  <mat-option [value]="c.id">{{ c.fullName }} (NIT: {{ c.taxNumber || 'CF' }})</mat-option>
+                }
+              </mat-select>
+              @if (saleForm.get('customerId')?.invalid && saleForm.get('customerId')?.touched) {
+                <mat-error>Debe seleccionar un cliente.</mat-error>
+              }
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Fecha de Emisión *</mat-label>
+              <input matInput type="date" formControlName="saleDate" />
+              @if (saleForm.get('saleDate')?.invalid && saleForm.get('saleDate')?.touched) {
+                <mat-error>La fecha es requerida.</mat-error>
+              }
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Estado de la Venta</mat-label>
+              <mat-select formControlName="statusId">
+                @for (st of statuses; track st.id) {
+                  <mat-option [value]="st.id">{{ st.name }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+          </div>
+
+          <div class="items-section">
+            <div class="items-section-header">
+              <div class="items-title">
+                <h4>Detalle de Productos a Facturar</h4>
+                <span class="items-count">{{ itemRows.length }} ítem(s) agregado(s)</span>
+              </div>
+              <button type="button" mat-stroked-button color="primary" (click)="addItem()">
+                <mat-icon>add</mat-icon>
+                <span>Agregar Producto</span>
+              </button>
+            </div>
+
+            <div class="items-table-wrapper">
+              <table class="items-table">
+                <thead>
+                  <tr>
+                    <th style="width: 42%;">Producto *</th>
+                    <th style="width: 14%; text-align: center;">Disponible</th>
+                    <th style="width: 14%;">Cantidad *</th>
+                    <th style="width: 16%;">Precio (Q) *</th>
+                    <th style="width: 14%; text-align: right;">Subtotal</th>
+                    <th style="width: 5%;"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (item of itemRows; track $index) {
+                    <tr>
+                      <td>
+                        <mat-form-field appearance="outline" class="table-input-field">
+                          <mat-select 
+                            [(ngModel)]="item.productId" 
+                            [ngModelOptions]="{standalone: true}"
+                            (ngModelChange)="onProductSelected($index)"
+                          >
+                            <mat-option [value]="null" disabled>Seleccionar producto...</mat-option>
+                            @for (prod of products; track prod.id) {
+                              <mat-option [value]="prod.id">
+                                {{ prod.name }} (Stock: {{ getStockForProduct(prod.id ?? null) }})
+                              </mat-option>
+                            }
+                          </mat-select>
+                        </mat-form-field>
+                      </td>
+                      <td class="text-center font-mono">
+                        <span class="stock-badge" [class.stock-zero]="(item.availableStock ?? 0) <= 0">
+                          {{ item.availableStock ?? 0 }}
+                        </span>
+                      </td>
+                      <td>
+                        <mat-form-field appearance="outline" class="table-input-field">
+                          <input 
+                            matInput
+                            type="number" 
+                            [(ngModel)]="item.quantity" 
+                            [ngModelOptions]="{standalone: true}"
+                            (ngModelChange)="updateItemSubtotal($index)"
+                            min="1" 
+                            [max]="item.availableStock ?? 9999"
+                            step="1"
+                            placeholder="1"
+                          />
+                        </mat-form-field>
+                      </td>
+                      <td>
+                        <mat-form-field appearance="outline" class="table-input-field">
+                          <input 
+                            matInput
+                            type="number" 
+                            [(ngModel)]="item.unitPrice" 
+                            [ngModelOptions]="{standalone: true}"
+                            (ngModelChange)="updateItemSubtotal($index)"
+                            min="0.01" 
+                            step="0.01"
+                            placeholder="0.00"
+                            disabled="true"
+                          />
+                        </mat-form-field>
+                      </td>
+                      <td class="text-right font-semibold text-main font-mono">
+                        {{ formatCurrency(item.subtotal) }}
+                      </td>
+                      <td class="text-center">
+                        <button type="button" mat-icon-button color="warn" (click)="removeItem($index)" title="Eliminar fila">
+                          <mat-icon>delete</mat-icon>
+                        </button>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="payments-form-section">
+            <h4 class="sub-section-title">Forma de Pago</h4>
+            <div class="form-grid-3">
+              <mat-form-field appearance="outline">
+                <mat-label>Método de Pago *</mat-label>
+                <mat-select formControlName="paymentMethodId">
+                  <mat-option [value]="null" disabled>Seleccionar método...</mat-option>
+                  @for (pm of paymentMethods; track pm.id) {
+                    <mat-option [value]="pm.id">{{ pm.name }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>No. Referencia / Autorización</mat-label>
+                <input matInput formControlName="paymentReference" placeholder="Ej. AUTH-VISA-10492" />
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>Notas de Pago</mat-label>
+                <input matInput formControlName="paymentNotes" placeholder="Observaciones de cobranza" />
+              </mat-form-field>
+            </div>
+          </div>
+
+          <div class="totals-summary-box">
+            <div class="summary-line">
+              <span class="summary-label">Subtotal Venta:</span>
+              <span class="summary-value font-mono">{{ formatCurrency(calculatedSubtotal) }}</span>
+            </div>
+            <div class="summary-line">
+              <span class="summary-label">IVA Guatemala (12%):</span>
+              <span class="summary-value font-mono">{{ formatCurrency(calculatedTax) }}</span>
+            </div>
+            <div class="summary-line line-total">
+              <span class="summary-label">Total a Facturar:</span>
+              <span class="summary-value font-bold font-mono">{{ formatCurrency(calculatedTotal) }}</span>
+            </div>
+          </div>
+
+          <footer class="modal-footer">
+            <button type="button" mat-button (click)="closeCreateModal()" [disabled]="saving">
+              Cancelar
+            </button>
+            <button type="submit" mat-flat-button color="primary" [disabled]="saving || saleForm.invalid || itemRows.length === 0">
+              @if (saving) {
+                <span>Facturando y Generando PDF...</span>
+              } @else {
+                <span>Facturar Venta & Emitir PDF</span>
+              }
+            </button>
+          </footer>
+        </form>
+      </mat-card>
+    </div>
+  }
+
+  @if (isDetailModalOpen && selectedSale) {
+    <div class="modal-backdrop" (click)="closeDetailModal()">
+      <mat-card class="modal-card modal-large" (click)="$event.stopPropagation()">
+        <header class="modal-header">
+          <div class="modal-title-group">
+            <div class="modal-icon-badge">
+              <mat-icon>receipt</mat-icon>
+            </div>
+            <div>
+              <div class="detail-header-flex">
+                <h2 class="modal-title">Factura {{ selectedSale.invoiceNumber || '#' + selectedSale.id }}</h2>
+                <span class="status-badge" [ngClass]="getStatusBadgeClass(selectedSale.status?.name)">
+                  <span class="status-dot"></span>
+                  {{ getStatusLabel(selectedSale.status?.name) }}
+                </span>
+              </div>
+              <p class="modal-subtitle">Documento tributario de compra-venta comercial.</p>
+            </div>
+          </div>
+
+          <button mat-icon-button (click)="closeDetailModal()" title="Cerrar modal">
+            <mat-icon>close</mat-icon>
+          </button>
+        </header>
+
+        <div class="modal-body">
+          <div class="detail-info-grid">
+            <div class="detail-card">
+              <span class="detail-label">Cliente Receptor</span>
+              <strong class="detail-value text-main">{{ selectedSale.customer?.fullName || 'Consumidor Final' }}</strong>
+              <span class="detail-sub font-mono">NIT: {{ selectedSale.customer?.taxNumber || 'C/F' }}</span>
+              <span class="detail-sub">Teléfono: {{ selectedSale.customer?.phone || 'No registrado' }}</span>
+              <span class="detail-sub">Dirección: {{ selectedSale.customer?.address || 'Ciudad de Guatemala' }}</span>
+            </div>
+
+            <div class="detail-card">
+              <span class="detail-label">Información Fiscal</span>
+              <div class="detail-row">
+                <span>Número Factura:</span>
+                <strong class="font-mono">{{ selectedSale.invoiceNumber }}</strong>
+              </div>
+              <div class="detail-row">
+                <span>Fecha de Emisión:</span>
+                <strong>{{ formatDate(selectedSale.saleDate) }}</strong>
+              </div>
+              <div class="detail-row">
+                <span>Vendedor Responsable:</span>
+                <strong>{{ selectedSale.user?.fullName || 'Ventas' }}</strong>
+              </div>
+              <div class="detail-row">
+                <span>Código Empleado:</span>
+                <span class="font-mono">#{{ selectedSale.user?.employeeNumber || '1' }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="items-section">
+            <h4 class="detail-section-title">Productos Facturados</h4>
+
+            @if (loadingDetailItems) {
+              <div class="loading-state">
+                <mat-spinner diameter="32"></mat-spinner>
+                <p>Cargando líneas de factura...</p>
+              </div>
+            } @else {
+              <div class="items-table-wrapper">
+                <table class="items-table">
+                  <thead>
+                    <tr>
+                      <th>Producto</th>
+                      <th>SKU</th>
+                      <th class="text-center">Cantidad</th>
+                      <th class="text-right">Precio Unitario</th>
+                      <th class="text-right">Subtotal</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (item of selectedSaleItems; track item.id || $index) {
+                      <tr>
+                        <td class="font-medium text-main">{{ item.product?.name }}</td>
+                        <td class="font-mono text-muted">{{ item.product?.sku || '-' }}</td>
+                        <td class="text-center font-bold">{{ item.quantity }}</td>
+                        <td class="text-right font-mono">{{ formatCurrency(item.unitPrice) }}</td>
+                        <td class="text-right font-bold text-main font-mono">{{ formatCurrency(item.subtotal) }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
+          </div>
+
+          @if (selectedSale.payments && selectedSale.payments.length > 0) {
+            <div class="payments-detail-section">
+              <h4 class="detail-section-title">Pagos Registrados</h4>
+              <div class="payments-grid">
+                @for (p of selectedSale.payments; track p.id) {
+                  <div class="payment-card">
+                    <span class="payment-method-name font-bold">{{ p.paymentMethod?.name }}</span>
+                    <span class="font-mono text-main font-bold">{{ formatCurrency(p.amount) }}</span>
+                    @if (p.referenceNumber) {
+                      <span class="text-muted font-mono text-compact">Ref: {{ p.referenceNumber }}</span>
+                    }
+                  </div>
+                }
+              </div>
+            </div>
+          }
+
+          <div class="totals-summary-box">
+            <div class="summary-line">
+              <span class="summary-label">Subtotal:</span>
+              <span class="summary-value font-mono">{{ formatCurrency(selectedSale.subtotal) }}</span>
+            </div>
+            <div class="summary-line">
+              <span class="summary-label">IVA (12%):</span>
+              <span class="summary-value font-mono">{{ formatCurrency(selectedSale.taxAmount) }}</span>
+            </div>
+            <div class="summary-line line-total">
+              <span class="summary-label">Total Liquidado:</span>
+              <span class="summary-value font-bold font-mono">{{ formatCurrency(selectedSale.totalAmount) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <footer class="modal-footer">
+          <button mat-flat-button color="primary" (click)="downloadInvoicePdf(selectedSale)">
+            <mat-icon>picture_as_pdf</mat-icon>
+            <span>Descargar Factura PDF</span>
+          </button>
+          @if (selectedSale.status?.name !== 'CANCELADA') {
+            <button mat-stroked-button (click)="openStatusModal(selectedSale)">
+              Cambiar Estado
+            </button>
+          }
+          <button mat-button (click)="closeDetailModal()">
+            Cerrar
+          </button>
+        </footer>
+      </mat-card>
+    </div>
+  }
+
+  @if (isStatusModalOpen && selectedSale) {
+    <div class="modal-backdrop" (click)="closeStatusModal()">
+      <mat-card class="modal-card modal-compact" (click)="$event.stopPropagation()">
+        <header class="modal-header">
+          <div class="modal-title-group">
+            <div class="modal-icon-badge">
+              <mat-icon>sync_alt</mat-icon>
+            </div>
+            <div>
+              <h2 class="modal-title">Actualizar Estado de Venta</h2>
+              <p class="modal-subtitle">Factura {{ selectedSale.invoiceNumber }}</p>
+            </div>
+          </div>
+
+          <button mat-icon-button (click)="closeStatusModal()" title="Cerrar modal">
+            <mat-icon>close</mat-icon>
+          </button>
+        </header>
+
+        <div class="modal-body">
+          @if (modalError) {
+            <div class="modal-error-banner">
+              <mat-icon color="warn">error</mat-icon>
+              <span>{{ modalError }}</span>
+            </div>
+          }
+
+          <div class="current-status-banner">
+            <span class="text-muted">Estado actual:</span>
+            <span class="status-badge" [ngClass]="getStatusBadgeClass(selectedSale.status?.name)">
+              <span class="status-dot"></span>
+              {{ getStatusLabel(selectedSale.status?.name) }}
+            </span>
+          </div>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Seleccionar nuevo estado *</mat-label>
+            <mat-select [(ngModel)]="newStatusIdToApply">
+              <mat-option [value]="null" disabled>Seleccionar estado...</mat-option>
+              @for (st of statuses; track st.id) {
+                @if (st.id !== selectedSale.status?.id) {
+                  <mat-option [value]="st.id">{{ st.name }} - {{ st.description }}</mat-option>
+                }
+              }
+            </mat-select>
+          </mat-form-field>
+        </div>
+
+        <footer class="modal-footer">
+          <button mat-button (click)="closeStatusModal()" [disabled]="statusUpdating">
+            Cancelar
+          </button>
+          <button mat-flat-button color="primary" (click)="saveStatusChange()" [disabled]="statusUpdating || !newStatusIdToApply">
+            @if (statusUpdating) {
+              <mat-spinner diameter="18"></mat-spinner>
+              <span>Guardando...</span>
+            } @else {
+              <span>Confirmar Cambio</span>
+            }
+          </button>
+        </footer>
+      </mat-card>
+    </div>
+  }
+
+  @if (toast?.show) {
+    <div class="toast-container" [ngClass]="toast?.type">
+      <div class="toast-icon">
+        <mat-icon>{{ toast?.type === 'success' ? 'check_circle' : 'error' }}</mat-icon>
+      </div>
+      <div class="toast-content">
+        <h4 class="toast-title">{{ toast?.title }}</h4>
+        <p class="toast-message">{{ toast?.message }}</p>
+      </div>
+      <button mat-icon-button (click)="closeToast()" title="Cerrar notificación">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+  }
+</div>

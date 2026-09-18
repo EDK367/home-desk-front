@@ -16,6 +16,17 @@ import {
 } from '../../../../core/models/supplier';
 import { ProductResponse } from '../../../../core/models/product';
 
+import { MatCardModule } from '@angular/material/card';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
+import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatChipsModule } from '@angular/material/chips';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatOptionModule } from '@angular/material/core';
+
 interface ToastState {
   show: boolean;
   type: 'success' | 'error';
@@ -26,7 +37,21 @@ interface ToastState {
 @Component({
   selector: 'app-providers',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    ReactiveFormsModule,
+    MatCardModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatSelectModule,
+    MatCheckboxModule,
+    MatButtonModule,
+    MatIconModule,
+    MatChipsModule,
+    MatProgressSpinnerModule,
+    MatOptionModule
+  ],
   templateUrl: './providers.html',
   styleUrl: './providers.css'
 })
@@ -44,7 +69,6 @@ export class Providers implements OnInit, OnDestroy {
   filteredSuppliers: SupplierResponse[] = [];
   availableProducts: ProductResponse[] = [];
 
-  // Paginación
   currentPage = 1;
   pageSize = 10;
   totalElements = 0;
@@ -53,15 +77,12 @@ export class Providers implements OnInit, OnDestroy {
   sortOrder: 'ASC' | 'DESC' = 'ASC';
   includeInactive: boolean = false;
 
-  // Búsqueda
   searchTerm = '';
 
-  // Flags
   loading = true;
   savingProduct = false;
   loadingProductsModal = false;
 
-  // Modales
   isDetailModalOpen = false;
   isProductsModalOpen = false;
   isEditProductModalOpen = false;
@@ -72,14 +93,12 @@ export class Providers implements OnInit, OnDestroy {
 
   modalError: string | null = null;
 
-  // Formulario para asociar producto a proveedor
   linkProductForm: FormGroup = this.fb.group({
     productId: [null, [Validators.required]],
     supplierSku: ['', [Validators.maxLength(30)]],
     cost: [null, [Validators.required, Validators.min(0)]]
   });
 
-  // Formulario para editar costo / SKU de producto asociado
   editProductForm: FormGroup = this.fb.group({
     supplierSku: ['', [Validators.maxLength(30)]],
     cost: [null, [Validators.required, Validators.min(0)]]
@@ -244,7 +263,6 @@ export class Providers implements OnInit, OnDestroy {
     }
   }
 
-  // Modal 1: Detalle del Proveedor
   openDetailModal(supplier: SupplierResponse): void {
     this.selectedSupplier = supplier;
     this.isDetailModalOpen = true;
@@ -255,7 +273,6 @@ export class Providers implements OnInit, OnDestroy {
     this.selectedSupplier = null;
   }
 
-  // Modal 2: Catálogo de Productos del Proveedor
   openProductsModal(supplier: SupplierResponse): void {
     this.selectedSupplier = supplier;
     this.modalError = null;
@@ -292,7 +309,6 @@ export class Providers implements OnInit, OnDestroy {
     this.linkProductForm.reset();
   }
 
-  // Asociar nuevo producto
   linkProduct(): void {
     if (this.linkProductForm.invalid || !this.selectedSupplier?.id) {
       this.linkProductForm.markAllAsTouched();
@@ -325,7 +341,6 @@ export class Providers implements OnInit, OnDestroy {
     });
   }
 
-  // Modal 3: Editar producto de proveedor
   openEditProductModal(sp: SupplierProductResponse): void {
     this.selectedSupplierProduct = sp;
     this.editProductForm.patchValue({
@@ -371,7 +386,6 @@ export class Providers implements OnInit, OnDestroy {
     });
   }
 
-  // Desvincular producto de proveedor
   unlinkProduct(sp: SupplierProductResponse): void {
     if (!sp.id) return;
 
@@ -392,14 +406,12 @@ export class Providers implements OnInit, OnDestroy {
     }
   }
 
-  // Generar compra a este proveedor
   newPurchaseWithSupplier(supplier: SupplierResponse): void {
     this.router.navigate(['/purchasing/purchases'], {
       queryParams: { action: 'new', supplierId: supplier.id }
     });
   }
 
-  // Toast
   showToast(type: 'success' | 'error', title: string, message: string): void {
     if (this.toastTimeout) clearTimeout(this.toastTimeout);
     this.toast = { show: true, type, title, message };

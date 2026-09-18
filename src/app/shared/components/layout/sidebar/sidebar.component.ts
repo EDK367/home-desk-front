@@ -1,6 +1,11 @@
 import { Component, inject, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
+import { MatListModule } from '@angular/material/list';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatChipsModule } from '@angular/material/chips';
+import { MatDividerModule } from '@angular/material/divider';
 import { AuthService } from '../../../../core/services/auth';
 import { TokenService } from '../../../../core/services/token';
 import { SessionService } from '../../../../core/services/session';
@@ -9,7 +14,16 @@ import { ROLE_MENUS, RoleMenuConfig } from './sidebar';
 @Component({
   selector: 'app-sidebar',
   standalone: true,
-  imports: [CommonModule, RouterLink, RouterLinkActive],
+  imports: [
+    CommonModule,
+    RouterLink,
+    RouterLinkActive,
+    MatListModule,
+    MatButtonModule,
+    MatIconModule,
+    MatChipsModule,
+    MatDividerModule
+  ],
   templateUrl: './sidebar.component.html',
   styleUrl: './sidebar.component.css'
 })

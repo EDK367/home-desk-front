@@ -5,10 +5,23 @@ import { SessionService } from '../../../../core/services/session';
 import { extractHttpErrorMessage } from '../../../../core/interceptors/error.interceptor';
 import { UserSummaryResponse } from '../../../../core/models/auth';
 
+import { MatCardModule } from '@angular/material/card';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatChipsModule } from '@angular/material/chips';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+
 @Component({
   selector: 'app-purchasing-profile',
   standalone: true,
-  imports: [CommonModule],
+  imports: [
+    CommonModule,
+    MatCardModule,
+    MatButtonModule,
+    MatIconModule,
+    MatChipsModule,
+    MatProgressSpinnerModule
+  ],
   templateUrl: './profile.html',
   styleUrl: './profile.css'
 })

@@ -1,5 +1,10 @@
 import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { MatCardModule } from '@angular/material/card';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatChipsModule } from '@angular/material/chips';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { AuthService } from '../../../../core/services/auth';
 import { SessionService } from '../../../../core/services/session';
 import { extractHttpErrorMessage } from '../../../../core/interceptors/error.interceptor';
@@ -8,7 +13,7 @@ import { UserSummaryResponse } from '../../../../core/models/auth';
 @Component({
   selector: 'app-profile',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, MatCardModule, MatButtonModule, MatIconModule, MatChipsModule, MatProgressSpinnerModule],
   templateUrl: './profile.html',
   styleUrl: './profile.css'
 })

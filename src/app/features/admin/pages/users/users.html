@@ -5,405 +5,292 @@
       <p class="page-subtitle">Administra los accesos, roles y cuentas de usuarios en el sistema.</p>
     </div>
     <div class="header-actions">
-      <button (click)="openCreateModal()" class="btn-primary-action">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="12" y1="5" x2="12" y2="19"/>
-          <line x1="5" y1="12" x2="19" y2="12"/>
-        </svg>
+      <button mat-flat-button color="primary" (click)="openCreateModal()">
+        <mat-icon>person_add</mat-icon>
         <span>Crear usuario</span>
       </button>
     </div>
   </header>
 
-  <section class="toolbar-card">
-    <div class="search-box">
-      <span class="search-icon">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="11" cy="11" r="8"/>
-          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-        </svg>
-      </span>
-      <input 
-        type="text" 
-        [(ngModel)]="searchTerm" 
-        (ngModelChange)="onSearchChange()" 
-        placeholder="Buscar por nombre, username, correo o código de trabajo..." 
-        class="search-input"
-      />
-      @if (searchTerm) {
-        <button (click)="clearSearch()" class="clear-search-btn" title="Limpiar búsqueda">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="18" y1="6" x2="6" y2="18"/>
-            <line x1="6" y1="6" x2="18" y2="18"/>
-          </svg>
-        </button>
-      }
-    </div>
-
-    <div class="toolbar-info">
-      <span class="results-badge">
-        Total: <strong>{{ totalElements }}</strong> {{ totalElements === 1 ? 'registro' : 'registros' }}
-      </span>
-    </div>
-  </section>
-
-  <section class="controls-top-card">
-    <div class="controls-row">
-      <div class="control-group">
-        <label for="sortFieldSelect">Ordenar por:</label>
-        <select 
-          id="sortFieldSelect" 
-          [ngModel]="sortField" 
-          (ngModelChange)="onSortFieldChange($event)" 
-          class="select-control"
-        >
-          <option value="createdAt">Fecha de creación</option>
-          <option value="updatedAt">Fecha de actualización</option>
-          <option value="fullName">Nombre</option>
-          <option value="email">Correo electrónico</option>
-          <option value="employeeNumber">Código de trabajo</option>
-          <option value="id">ID Usuario</option>
-        </select>
-      </div>
-
-      <div class="control-group">
-        <label for="sortOrderSelect">Dirección:</label>
-        <select 
-          id="sortOrderSelect" 
-          [ngModel]="sortOrder" 
-          (ngModelChange)="onSortOrderChange($event)" 
-          class="select-control"
-        >
-          <option value="DESC">Descendente (DESC)</option>
-          <option value="ASC">Ascendente (ASC)</option>
-        </select>
-      </div>
-
-      <div class="control-group checkbox-group">
-        <label class="checkbox-label">
-          <input 
-            type="checkbox" 
-            [ngModel]="includeInactive" 
-            (ngModelChange)="onIncludeInactiveChange($event)" 
-            class="checkbox-input"
-          />
-          <span>Incluir inactivos</span>
-        </label>
-      </div>
-
-      <div class="control-group">
-        <label for="pageSizeSelectTop">Por página:</label>
-        <select 
-          id="pageSizeSelectTop" 
-          [ngModel]="pageSize" 
-          (ngModelChange)="onPageSizeChange($event)" 
-          class="select-control"
-        >
-          <option [ngValue]="5">5 por página</option>
-          <option [ngValue]="10">10 por página</option>
-          <option [ngValue]="20">20 por página</option>
-          <option [ngValue]="50">50 por página</option>
-        </select>
-      </div>
-    </div>
-
-    <div class="pagination-top-controls">
-      <span class="page-indicator">Página <strong>{{ currentPage }}</strong> de <strong>{{ totalPages }}</strong></span>
-
-      <div class="pagination-buttons">
-        <button (click)="goToPage(1)" [disabled]="currentPage === 1" class="btn-page" title="Primera página">
-          &laquo;
-        </button>
-        <button (click)="goToPage(currentPage - 1)" [disabled]="currentPage === 1" class="btn-page" title="Anterior">
-          &lsaquo;
-        </button>
-        
-        @for (p of pagesArray; track p) {
-          <button (click)="goToPage(p)" class="btn-page" [class.btn-page-active]="p === currentPage">
-            {{ p }}
+  <mat-card class="toolbar-card" appearance="outlined">
+    <mat-card-content class="toolbar-content">
+      <mat-form-field appearance="outline" class="search-box">
+        <mat-label>Buscar usuarios</mat-label>
+        <mat-icon matPrefix>search</mat-icon>
+        <input 
+          matInput 
+          type="text" 
+          [(ngModel)]="searchTerm" 
+          (ngModelChange)="onSearchChange()" 
+          placeholder="Buscar por nombre, username, correo..." 
+        />
+        @if (searchTerm) {
+          <button mat-icon-button matSuffix (click)="clearSearch()" title="Limpiar búsqueda">
+            <mat-icon>close</mat-icon>
           </button>
         }
+      </mat-form-field>
 
-        <button (click)="goToPage(currentPage + 1)" [disabled]="currentPage >= totalPages" class="btn-page" title="Siguiente">
-          &rsaquo;
-        </button>
-        <button (click)="goToPage(totalPages)" [disabled]="currentPage >= totalPages" class="btn-page" title="Última página">
-          &raquo;
-        </button>
+      <div class="toolbar-info">
+        <mat-chip class="results-badge">
+          Total: {{ totalElements }} {{ totalElements === 1 ? 'registro' : 'registros' }}
+        </mat-chip>
       </div>
-    </div>
-  </section>
+    </mat-card-content>
+  </mat-card>
 
-  <section class="table-card">
-    @if (loading) {
-      <div class="loading-state">
-        <div class="spinner"></div>
-        <p>Cargando listado de usuarios desde el backend...</p>
-      </div>
-    } @else {
-      @if (filteredUsers.length === 0) {
-        <div class="empty-state">
-          <div class="empty-icon">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-              <circle cx="9" cy="7" r="4"/>
-              <line x1="23" y1="11" x2="17" y2="11"/>
-            </svg>
-          </div>
-          <h3>No se encontraron usuarios</h3>
-          <p>No hay registros que coincidan con los criterios de búsqueda u ordenamiento seleccionados.</p>
-          @if (searchTerm) {
-            <button (click)="clearSearch()" class="btn-secondary-sm">Limpiar filtro de búsqueda</button>
+  <mat-card class="controls-top-card" appearance="outlined">
+    <mat-card-content class="controls-row">
+      <mat-form-field appearance="outline" class="control-field">
+        <mat-label>Ordenar por</mat-label>
+        <mat-select [ngModel]="sortField" (ngModelChange)="onSortFieldChange($event)">
+          <mat-option value="fullName">Nombre completo</mat-option>
+          <mat-option value="username">Nombre usuario</mat-option>
+          <mat-option value="employeeNumber">Código de trabajo</mat-option>
+          <mat-option value="id">ID de sistema</mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="control-field">
+        <mat-label>Dirección</mat-label>
+        <mat-select [ngModel]="sortOrder" (ngModelChange)="onSortOrderChange($event)">
+          <mat-option value="ASC">Ascendente</mat-option>
+          <mat-option value="DESC">Descendente</mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <mat-checkbox 
+        [ngModel]="includeInactive" 
+        (ngModelChange)="onIncludeInactiveChange($event)"
+        color="primary"
+        class="inactive-checkbox"
+      >
+        Incluir usuarios inactivos
+      </mat-checkbox>
+
+      <mat-form-field appearance="outline" class="control-field">
+        <mat-label>Por página</mat-label>
+        <mat-select [ngModel]="pageSize" (ngModelChange)="onPageSizeChange($event)">
+          <mat-option [value]="5">5 por página</mat-option>
+          <mat-option [value]="10">10 por página</mat-option>
+          <mat-option [value]="20">20 por página</mat-option>
+          <mat-option [value]="50">50 por página</mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <div class="pagination-top-controls">
+        <span class="page-indicator">Página <strong>{{ currentPage }}</strong> de <strong>{{ totalPages }}</strong></span>
+        <div class="pagination-buttons">
+          <button mat-icon-button (click)="goToPage(1)" [disabled]="currentPage === 1" title="Primera página">
+            <mat-icon>first_page</mat-icon>
+          </button>
+          <button mat-icon-button (click)="goToPage(currentPage - 1)" [disabled]="currentPage === 1" title="Anterior">
+            <mat-icon>chevron_left</mat-icon>
+          </button>
+          @for (p of pagesArray; track p) {
+            <button mat-stroked-button (click)="goToPage(p)" [color]="p === currentPage ? 'primary' : ''" class="btn-page-num">
+              {{ p }}
+            </button>
           }
+          <button mat-icon-button (click)="goToPage(currentPage + 1)" [disabled]="currentPage >= totalPages" title="Siguiente">
+            <mat-icon>chevron_right</mat-icon>
+          </button>
+          <button mat-icon-button (click)="goToPage(totalPages)" [disabled]="currentPage >= totalPages" title="Última página">
+            <mat-icon>last_page</mat-icon>
+          </button>
+        </div>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card class="table-card" appearance="outlined">
+    <mat-card-content>
+      @if (loading) {
+        <div class="loading-state">
+          <mat-spinner diameter="40"></mat-spinner>
+          <p>Cargando listado de usuarios desde el backend...</p>
         </div>
       } @else {
-        <div class="table-responsive">
-          <table class="users-table">
-            <thead>
-              <tr>
-                <th>Nombre</th>
-                <th>Username</th>
-                <th>Correo Electrónico</th>
-                <th>Código de Trabajo</th>
-                <th>Rol</th>
-                <th>Estatus</th>
-                <th class="text-right">Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (user of filteredUsers; track user.id || $index) {
-                <tr [class.inactive-row]="!user.isActive">
-                  <td class="font-medium text-main">
-                    <div class="user-avatar-cell">
-                      <span class="user-avatar" [class.avatar-inactive]="!user.isActive">
-                        {{ user.fullName ? user.fullName.charAt(0).toUpperCase() : 'U' }}
-                      </span>
-                      <span class="user-name">{{ user.fullName }}</span>
-                    </div>
-                  </td>
-                  <td class="text-muted">{{ user.username || '—' }}</td>
-                  <td class="text-muted">{{ user.email }}</td>
-                  <td class="text-muted font-mono">{{ user.employeeNumber || '—' }}</td>
-                  <td>
-                    <span class="badge-role" [ngClass]="getRoleBadgeClass(user.role?.name)">
-                      {{ getRoleLabel(user.role?.name) }}
-                    </span>
-                  </td>
-                  <td>
-                    @if (user.isActive) {
-                      <span class="status-badge status-active">
-                        <span class="status-dot"></span> Activo
-                      </span>
-                    } @else {
-                      <span class="status-badge status-inactive">
-                        <span class="status-dot"></span> Inactivo
-                      </span>
-                    }
-                  </td>
-                  <td class="text-right">
-                    <div class="actions-group">
-                      <button (click)="openEditModal(user)" class="btn-icon btn-edit" title="Editar usuario">
-                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                        </svg>
-                        <span>Editar</span>
-                      </button>
-
-                      <button (click)="toggleUserStatus(user)" class="btn-icon" [class.btn-deactivate]="user.isActive" [class.btn-activate]="!user.isActive" [title]="user.isActive ? 'Desactivar usuario' : 'Reactivar usuario'">
-                        @if (user.isActive) {
-                          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M18.36 6.64a9 9 0 1 1-12.73 0"/>
-                            <line x1="12" y1="2" x2="12" y2="12"/>
-                          </svg>
-                          <span>Desactivar</span>
-                        } @else {
-                          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="20 6 9 17 4 12"/>
-                          </svg>
-                          <span>Reactivar</span>
-                        }
-                      </button>
-                    </div>
-                  </td>
+        @if (filteredUsers.length === 0) {
+          <div class="empty-state">
+            <mat-icon class="empty-icon">person_off</mat-icon>
+            <h3>No se encontraron usuarios</h3>
+            <p>No hay registros que coincidan con los criterios de búsqueda u ordenamiento seleccionados.</p>
+            @if (searchTerm) {
+              <button mat-stroked-button color="primary" (click)="clearSearch()">Limpiar filtro de búsqueda</button>
+            }
+          </div>
+        } @else {
+          <div class="table-responsive">
+            <table class="users-table">
+              <thead>
+                <tr>
+                  <th>Nombre</th>
+                  <th>Username</th>
+                  <th>Correo Electrónico</th>
+                  <th>Código de Trabajo</th>
+                  <th>Rol</th>
+                  <th>Estatus</th>
+                  <th class="text-right">Acciones</th>
                 </tr>
-              }
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                @for (user of filteredUsers; track user.id || $index) {
+                  <tr [class.inactive-row]="!user.isActive">
+                    <td class="font-medium text-main">
+                      <div class="user-avatar-cell">
+                        <span class="user-avatar" [class.avatar-inactive]="!user.isActive">
+                          {{ user.fullName ? user.fullName.charAt(0).toUpperCase() : 'U' }}
+                        </span>
+                        <span class="user-name">{{ user.fullName }}</span>
+                      </div>
+                    </td>
+                    <td class="text-muted">{{ user.username || '—' }}</td>
+                    <td class="text-muted">{{ user.email }}</td>
+                    <td class="text-muted font-mono">{{ user.employeeNumber || '—' }}</td>
+                    <td>
+                      <span class="badge-role" [ngClass]="getRoleBadgeClass(user.role?.name)">
+                        {{ getRoleLabel(user.role?.name) }}
+                      </span>
+                    </td>
+                    <td>
+                      @if (user.isActive) {
+                        <span class="status-badge status-active">
+                          <span class="status-dot"></span> Activo
+                        </span>
+                      } @else {
+                        <span class="status-badge status-inactive">
+                          <span class="status-dot"></span> Inactivo
+                        </span>
+                      }
+                    </td>
+                    <td class="text-right">
+                      <div class="actions-group">
+                        <button mat-icon-button color="primary" (click)="openEditModal(user)" title="Editar usuario">
+                          <mat-icon>edit</mat-icon>
+                        </button>
+                        <button mat-icon-button [color]="user.isActive ? 'warn' : 'accent'" (click)="toggleUserStatus(user)" [title]="user.isActive ? 'Desactivar usuario' : 'Reactivar usuario'">
+                          <mat-icon>{{ user.isActive ? 'block' : 'check_circle' }}</mat-icon>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
       }
-    }
-  </section>
+    </mat-card-content>
+  </mat-card>
 
   @if (isModalOpen) {
     <div class="modal-backdrop" (click)="closeModal()">
-      <div class="modal-card" (click)="$event.stopPropagation()">
-        <header class="modal-header">
-          <div class="modal-title-group">
-            <div class="modal-icon-badge">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                <circle cx="12" cy="7" r="4"/>
-              </svg>
-            </div>
-            <div>
-              <h2 class="modal-title">{{ isEditMode ? 'Editar Usuario' : 'Crear Nuevo Usuario' }}</h2>
-              <p class="modal-subtitle">
-                {{ isEditMode ? 'Modifica los datos del usuario en el sistema.' : 'Ingresa la información requerida para registrar un usuario.' }}
-              </p>
-            </div>
-          </div>
-
-          <button (click)="closeModal()" class="btn-modal-close" title="Cerrar modal">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="18" y1="6" x2="6" y2="18"/>
-              <line x1="6" y1="6" x2="18" y2="18"/>
-            </svg>
+      <mat-card class="modal-card" appearance="outlined" (click)="$event.stopPropagation()">
+        <mat-card-header class="modal-header">
+          <mat-icon mat-card-avatar color="primary">person</mat-icon>
+          <mat-card-title class="modal-title">{{ isEditMode ? 'Editar Usuario' : 'Crear Nuevo Usuario' }}</mat-card-title>
+          <mat-card-subtitle class="modal-subtitle">
+            {{ isEditMode ? 'Modifica los datos del usuario en el sistema.' : 'Ingresa la información requerida para registrar un usuario.' }}
+          </mat-card-subtitle>
+          <button mat-icon-button (click)="closeModal()" class="btn-modal-close" title="Cerrar modal">
+            <mat-icon>close</mat-icon>
           </button>
-        </header>
+        </mat-card-header>
 
-        <form [formGroup]="userForm" (ngSubmit)="saveUser()" class="modal-body">
-          @if (modalError) {
-            <div class="modal-error-banner">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"/>
-                <line x1="12" y1="8" x2="12" y2="12"/>
-                <line x1="12" y1="16" x2="12.01" y2="16"/>
-              </svg>
-              <span>{{ modalError }}</span>
-            </div>
-          }
-
-          @if (isEditMode && editingUser) {
-            <div class="info-read-only-banner">
-              <div class="read-only-field">
-                <span class="ro-label">Username:</span>
-                <span class="ro-value">{{ editingUser.username || 'Generado automáticamente' }}</span>
+        <mat-card-content class="modal-card-content">
+          <form [formGroup]="userForm" (ngSubmit)="saveUser()" class="modal-body">
+            @if (modalError) {
+              <div class="modal-error-banner">
+                <mat-icon color="warn">error</mat-icon>
+                <span>{{ modalError }}</span>
               </div>
-              <div class="read-only-field">
-                <span class="ro-label">Código de Trabajo:</span>
-                <span class="ro-value">{{ editingUser.employeeNumber || 'N/A' }}</span>
+            }
+
+            @if (isEditMode && editingUser) {
+              <div class="info-read-only-banner">
+                <div class="read-only-field">
+                  <span class="ro-label">Username:</span>
+                  <span class="ro-value">{{ editingUser.username || 'Generado automáticamente' }}</span>
+                </div>
+                <div class="read-only-field">
+                  <span class="ro-label">Código de Trabajo:</span>
+                  <span class="ro-value">{{ editingUser.employeeNumber || 'N/A' }}</span>
+                </div>
               </div>
-            </div>
-          }
-
-          <div class="form-field" [class.field-error]="isFieldInvalid('fullName')">
-            <label for="fullName">Nombre Completo *</label>
-            <input 
-              id="fullName" 
-              type="text" 
-              formControlName="fullName" 
-              placeholder="Ej. Erikson Orozco" 
-              class="hd-input"
-            />
-            @if (isFieldInvalid('fullName')) {
-              <span class="error-msg">El nombre completo es obligatorio (máx. 150 caracteres).</span>
             }
-          </div>
 
-          <div class="form-field" [class.field-error]="isFieldInvalid('email')">
-            <label for="email">Correo Electrónico *</label>
-            <input 
-              id="email" 
-              type="email" 
-              formControlName="email" 
-              placeholder="usuario@ejemplo.com" 
-              class="hd-input"
-            />
-            @if (isFieldInvalid('email')) {
-              <span class="error-msg">Ingrese un correo electrónico válido.</span>
-            }
-          </div>
+            <mat-form-field appearance="outline" class="full-width-field">
+              <mat-label>Nombre Completo *</mat-label>
+              <input matInput formControlName="fullName" placeholder="Ej. Erikson Orozco" />
+              @if (isFieldInvalid('fullName')) {
+                <mat-error>El nombre completo es obligatorio (máx. 150 caracteres).</mat-error>
+              }
+            </mat-form-field>
 
-          <div class="form-field" [class.field-error]="isFieldInvalid('password')">
-            <label for="password">
-              Contraseña {{ isEditMode ? '(Dejar en blanco para conservar contraseña actual)' : '*' }}
-            </label>
-            <div class="input-password-wrap">
-              <input 
-                id="password" 
-                [type]="showPassword ? 'text' : 'password'" 
-                formControlName="password" 
-                placeholder="{{ isEditMode ? '••••••••' : 'Mínimo 6 caracteres' }}" 
-                class="hd-input"
-              />
-              <button type="button" (click)="togglePasswordVisibility()" class="btn-toggle-pwd">
-                @if (showPassword) {
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
-                    <line x1="1" y1="1" x2="23" y2="23"/>
-                  </svg>
+            <mat-form-field appearance="outline" class="full-width-field">
+              <mat-label>Correo Electrónico *</mat-label>
+              <input matInput type="email" formControlName="email" placeholder="usuario@ejemplo.com" />
+              @if (isFieldInvalid('email')) {
+                <mat-error>Ingrese un correo electrónico válido.</mat-error>
+              }
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="full-width-field">
+              <mat-label>Contraseña {{ isEditMode ? '(Opcional)' : '*' }}</mat-label>
+              <input matInput [type]="showPassword ? 'text' : 'password'" formControlName="password" placeholder="{{ isEditMode ? '••••••••' : 'Mínimo 6 caracteres' }}" />
+              <button type="button" mat-icon-button matSuffix (click)="togglePasswordVisibility()">
+                <mat-icon>{{ showPassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+              </button>
+              @if (isFieldInvalid('password')) {
+                <mat-error>La contraseña debe tener al menos 6 caracteres.</mat-error>
+              }
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="full-width-field">
+              <mat-label>Rol de Usuario *</mat-label>
+              <mat-select formControlName="roleId">
+                <mat-option [value]="null" disabled>Seleccione un rol...</mat-option>
+                @for (role of roles; track role.id) {
+                  <mat-option [value]="role.id">{{ getRoleLabel(role.name) }} - {{ role.description }}</mat-option>
+                }
+              </mat-select>
+              @if (isFieldInvalid('roleId')) {
+                <mat-error>Debe seleccionar un rol para el usuario.</mat-error>
+              }
+            </mat-form-field>
+
+            <mat-card-actions align="end" class="modal-footer">
+              <button mat-button type="button" (click)="closeModal()" [disabled]="saving">Cancelar</button>
+              <button mat-flat-button color="primary" type="submit" [disabled]="saving || userForm.invalid">
+                @if (saving) {
+                  <mat-spinner diameter="18"></mat-spinner>
+                  <span>Guardando...</span>
                 } @else {
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                    <circle cx="12" cy="12" r="3"/>
-                  </svg>
+                  <span>{{ isEditMode ? 'Guardar Cambios' : 'Crear Usuario' }}</span>
                 }
               </button>
-            </div>
-            @if (isFieldInvalid('password')) {
-              <span class="error-msg">La contraseña debe tener al menos 6 caracteres.</span>
-            }
-          </div>
-
-          <div class="form-field" [class.field-error]="isFieldInvalid('roleId')">
-            <label for="roleId">Rol de Usuario *</label>
-            <select id="roleId" formControlName="roleId" class="hd-input hd-select">
-              <option [ngValue]="null" disabled>Seleccione un rol...</option>
-              @for (role of roles; track role.id) {
-                <option [ngValue]="role.id">{{ getRoleLabel(role.name) }} - {{ role.description }}</option>
-              }
-            </select>
-            @if (isFieldInvalid('roleId')) {
-              <span class="error-msg">Debe seleccionar un rol para el usuario.</span>
-            }
-          </div>
-
-          <footer class="modal-footer">
-            <button type="button" (click)="closeModal()" class="btn-cancel" [disabled]="saving">
-              Cancelar
-            </button>
-            <button type="submit" class="btn-save" [disabled]="saving || userForm.invalid">
-              @if (saving) {
-                <span class="btn-spinner"></span>
-                <span>Guardando...</span>
-              } @else {
-                <span>{{ isEditMode ? 'Guardar Cambios' : 'Crear Usuario' }}</span>
-              }
-            </button>
-          </footer>
-        </form>
-      </div>
+            </mat-card-actions>
+          </form>
+        </mat-card-content>
+      </mat-card>
     </div>
   }
 
   @if (toast?.show) {
     <div class="toast-container" [ngClass]="toast?.type">
       <div class="toast-icon">
-        @if (toast?.type === 'success') {
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-            <polyline points="22 4 12 14.01 9 11.01"/>
-          </svg>
-        } @else {
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10"/>
-            <line x1="12" y1="8" x2="12" y2="12"/>
-            <line x1="12" y1="16" x2="12.01" y2="16"/>
-          </svg>
-        }
+        <mat-icon>{{ toast?.type === 'success' ? 'check_circle' : 'error' }}</mat-icon>
       </div>
       <div class="toast-content">
         <h4 class="toast-title">{{ toast?.title }}</h4>
         <p class="toast-message">{{ toast?.message }}</p>
       </div>
-      <button (click)="closeToast()" class="toast-close" title="Cerrar notificación">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <line x1="18" y1="6" x2="6" y2="18"/>
-          <line x1="6" y1="6" x2="18" y2="18"/>
-        </svg>
+      <button mat-icon-button (click)="closeToast()" title="Cerrar notificación">
+        <mat-icon>close</mat-icon>
       </button>
     </div>
   }
 </div>
+
 

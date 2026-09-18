@@ -1,0 +1,313 @@
+<div class="p-6 w-full flex flex-col gap-6">
+  @if (toast) {
+    <div class="fixed top-6 right-6 z-50 flex items-center gap-3 p-4 bg-white rounded-lg shadow-lg border-l-4" [class.border-emerald-600]="toast.type === 'success'" [class.border-red-600]="toast.type === 'error'">
+      <mat-icon [class.text-emerald-600]="toast.type === 'success'" [class.text-red-600]="toast.type === 'error'">
+        {{ toast.type === 'success' ? 'check_circle' : 'error' }}
+      </mat-icon>
+      <div class="flex flex-col text-sm">
+        <strong class="font-semibold text-gray-900">{{ toast.title }}</strong>
+        <span class="text-gray-600">{{ toast.message }}</span>
+      </div>
+      <button mat-icon-button (click)="closeToast()"><mat-icon>close</mat-icon></button>
+    </div>
+  }
+
+  <header class="flex justify-between items-center flex-wrap gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900">Inventario y Kardex (Administración)</h1>
+      <p class="text-sm text-gray-600">Monitoreo de existencias en almacén, trazabilidad de lotes y auditoría de movimientos.</p>
+    </div>
+  </header>
+
+  <mat-card appearance="outlined">
+    <mat-tab-group (selectedIndexChange)="onTabChange($event)" dynamicHeight>
+      <mat-tab label="Existencias de Almacén">
+        <div class="p-4 border-b border-gray-100 flex justify-between items-center gap-4 flex-wrap">
+          <div class="flex-1 min-w-[260px]">
+            <mat-form-field appearance="outline" class="w-full mb-[-1.25em]">
+              <mat-icon matPrefix>search</mat-icon>
+              <input matInput [(ngModel)]="stockSearch" (ngModelChange)="applyStockFilter()" placeholder="Buscar por producto, SKU o categoría...">
+            </mat-form-field>
+          </div>
+          <div class="flex items-center gap-3">
+            <mat-chip class="results-badge">
+              Total: {{ filteredInventories.length }} registros
+            </mat-chip>
+            <button mat-stroked-button (click)="loadStock()" [disabled]="loadingStock">
+              <mat-icon>refresh</mat-icon>
+              <span>Actualizar</span>
+            </button>
+          </div>
+        </div>
+
+        @if (loadingStock) {
+          <div class="loading-state">
+            <mat-spinner diameter="40"></mat-spinner>
+            <p>Cargando existencias...</p>
+          </div>
+        } @else {
+          <div class="table-responsive">
+            <table class="users-table">
+              <thead>
+                <tr>
+                  <th>Producto</th>
+                  <th>SKU</th>
+                  <th>Categoría</th>
+                  <th>Existencia Actual</th>
+                  <th>Mínimo</th>
+                  <th>Estado</th>
+                  <th class="text-right">Lotes</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (i of filteredInventories; track i.id) {
+                  <tr>
+                    <td class="font-medium text-main">
+                      <div class="entity-cell">
+                        <span class="entity-avatar">
+                          <mat-icon class="!text-base !w-4 !h-4 flex items-center justify-center">inventory_2</mat-icon>
+                        </span>
+                        <span class="font-semibold text-gray-900">{{ i.product?.name }}</span>
+                      </div>
+                    </td>
+                    <td class="font-mono text-muted">{{ i.product?.sku }}</td>
+                    <td><mat-chip class="text-xs">{{ i.product?.category?.name || 'General' }}</mat-chip></td>
+                    <td class="font-bold font-mono" [class.text-red-700]="i.isLowStock || (i.quantityOnHand || 0) < (i.product?.minStockLevel || 0)" [class.text-emerald-700]="!i.isLowStock && (i.quantityOnHand || 0) >= (i.product?.minStockLevel || 0)">
+                      {{ i.quantityOnHand || 0 }} uds.
+                    </td>
+                    <td class="font-mono text-muted">{{ i.product?.minStockLevel || 0 }} uds.</td>
+                    <td>
+                      @if (i.isLowStock) {
+                        <span class="status-badge status-warn">
+                          <span class="status-dot"></span> Stock Bajo
+                        </span>
+                      } @else {
+                        <span class="status-badge status-active">
+                          <span class="status-dot"></span> Normal
+                        </span>
+                      }
+                    </td>
+                    <td class="text-right">
+                      <button mat-stroked-button color="primary" (click)="openProductLotsModal(i)">
+                        <mat-icon>layers</mat-icon>
+                        <span>Ver Lotes</span>
+                      </button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </mat-tab>
+
+      <mat-tab label="Kardex / Movimientos">
+        <div class="p-4 border-b border-gray-100 flex justify-between items-center gap-4 flex-wrap">
+          <div class="flex-1 min-w-[260px]">
+            <mat-form-field appearance="outline" class="w-full mb-[-1.25em]">
+              <mat-icon matPrefix>search</mat-icon>
+              <input matInput [(ngModel)]="movementSearch" (ngModelChange)="applyMovementsFilter()" placeholder="Buscar por producto, referencia...">
+            </mat-form-field>
+          </div>
+          <div class="flex items-center gap-3 flex-wrap">
+            <mat-form-field appearance="outline" class="w-48 mb-[-1.25em]">
+              <mat-label>Tipo</mat-label>
+              <mat-select [(value)]="movementTypeFilter" (selectionChange)="applyMovementsFilter()">
+                <mat-option value="ALL">Todos los tipos</mat-option>
+                <mat-option value="PURCHASE_ENTRY">Entrada por Compra</mat-option>
+                <mat-option value="SALE_EXIT">Salida por Venta</mat-option>
+                <mat-option value="ADJUSTMENT_IN">Ajuste Positivo</mat-option>
+                <mat-option value="ADJUSTMENT_OUT">Ajuste Negativo</mat-option>
+              </mat-select>
+            </mat-form-field>
+            <mat-chip class="results-badge">
+              Total: {{ filteredMovements.length }} movimientos
+            </mat-chip>
+          </div>
+        </div>
+
+        @if (loadingMovements) {
+          <div class="loading-state">
+            <mat-spinner diameter="40"></mat-spinner>
+            <p>Cargando movimientos de Kardex...</p>
+          </div>
+        } @else {
+          <div class="table-responsive">
+            <table class="users-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Fecha</th>
+                  <th>Tipo</th>
+                  <th>Producto</th>
+                  <th>Cantidad</th>
+                  <th>Referencia</th>
+                  <th class="text-right">Lotes</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (m of filteredMovements; track m.id) {
+                  <tr>
+                    <td class="font-mono text-muted">#{{ m.id }}</td>
+                    <td class="text-muted">{{ formatDate(m.createdAt) }}</td>
+                    <td>
+                      <span class="status-badge" [class.status-active]="m.movementType?.includes('IN') || m.movementType?.includes('ENTRY')" [class.status-warn]="m.movementType?.includes('OUT') || m.movementType?.includes('EXIT')">
+                        <span class="status-dot"></span> {{ m.movementType }}
+                      </span>
+                    </td>
+                    <td class="font-semibold text-gray-900">{{ m.product?.name }}</td>
+                    <td class="font-mono font-bold">{{ m.quantity }}</td>
+                    <td class="text-muted">{{ (m.referenceType || 'REF') + ' #' + (m.referenceId || '—') }}</td>
+                    <td class="text-right">
+                      <button mat-icon-button (click)="openMovementLotsModal(m)" title="Ver Lotes del Movimiento">
+                        <mat-icon>layers</mat-icon>
+                      </button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </mat-tab>
+
+      <mat-tab label="Lotes de Entrada">
+        <div class="p-4 border-b border-gray-100 flex justify-between items-center gap-4 flex-wrap">
+          <div class="flex-1 min-w-[260px]">
+            <mat-form-field appearance="outline" class="w-full mb-[-1.25em]">
+              <mat-icon matPrefix>search</mat-icon>
+              <input matInput [(ngModel)]="lotSearch" (ngModelChange)="applyLotsFilter()" placeholder="Buscar por lote o producto...">
+            </mat-form-field>
+          </div>
+          <mat-chip class="results-badge">
+            Total: {{ filteredLots.length }} lotes
+          </mat-chip>
+        </div>
+
+        @if (loadingLots) {
+          <div class="loading-state">
+            <mat-spinner diameter="40"></mat-spinner>
+            <p>Cargando lotes...</p>
+          </div>
+        } @else {
+          <div class="table-responsive">
+            <table class="users-table">
+              <thead>
+                <tr>
+                  <th>No. Lote</th>
+                  <th>Producto</th>
+                  <th>Recibido</th>
+                  <th>Disponible</th>
+                  <th>Costo U.</th>
+                  <th>Ingreso</th>
+                  <th>Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (l of filteredLots; track l.id) {
+                  <tr>
+                    <td class="font-mono font-bold text-gray-900">LOTE-{{ l.id }}</td>
+                    <td class="font-semibold text-gray-900">{{ l.product?.name }}</td>
+                    <td class="font-mono">{{ l.quantityReceived }} uds.</td>
+                    <td class="font-mono font-bold text-emerald-700">{{ l.quantityRemaining }} uds.</td>
+                    <td class="font-semibold">{{ formatMoney(l.unitCost) }}</td>
+                    <td class="text-muted">{{ formatDate(l.receivedAt) }}</td>
+                    <td>
+                      @if ((l.quantityRemaining || 0) > 0) {
+                        <span class="status-badge status-active">
+                          <span class="status-dot"></span> Activo
+                        </span>
+                      } @else {
+                        <span class="status-badge status-inactive">
+                          <span class="status-dot"></span> Agotado
+                        </span>
+                      }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </mat-tab>
+    </mat-tab-group>
+  </mat-card>
+
+  @if (isProductLotsModalOpen) {
+    <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" (click)="closeProductLotsModal()">
+      <div class="bg-white rounded-xl shadow-2xl w-full max-w-xl overflow-hidden flex flex-col" (click)="$event.stopPropagation()">
+        <div class="p-4 border-b border-gray-100 flex justify-between items-center">
+          <h2 class="text-base font-bold text-gray-900">Lotes Activos - {{ selectedProductName }}</h2>
+          <button mat-icon-button (click)="closeProductLotsModal()"><mat-icon>close</mat-icon></button>
+        </div>
+        <div class="p-6">
+          @if (selectedProductLots.length === 0) {
+            <p class="text-sm text-gray-500 italic">No se encontraron lotes activos para este producto.</p>
+          } @else {
+            <table class="w-full text-left border-collapse text-sm">
+              <thead>
+                <tr class="bg-gray-100 text-gray-600 text-xs">
+                  <th class="p-2">Lote</th>
+                  <th class="p-2">Disponible</th>
+                  <th class="p-2">Costo U.</th>
+                  <th class="p-2">Fecha Ingreso</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-100">
+                @for (pl of selectedProductLots; track pl.id) {
+                  <tr>
+                    <td class="p-2 font-mono font-bold">LOTE-{{ pl.id }}</td>
+                    <td class="p-2 font-mono font-bold text-emerald-700">{{ pl.quantityRemaining }}</td>
+                    <td class="p-2">{{ formatMoney(pl.unitCost) }}</td>
+                    <td class="p-2 text-gray-600">{{ formatDate(pl.receivedAt) }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          }
+        </div>
+        <div class="p-4 border-t border-gray-100 flex justify-end">
+          <button mat-flat-button color="primary" (click)="closeProductLotsModal()">Cerrar</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  @if (isMovementLotsModalOpen) {
+    <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" (click)="closeMovementLotsModal()">
+      <div class="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col" (click)="$event.stopPropagation()">
+        <div class="p-4 border-b border-gray-100 flex justify-between items-center">
+          <h2 class="text-base font-bold text-gray-900">Lotes Afectados por el Movimiento</h2>
+          <button mat-icon-button (click)="closeMovementLotsModal()"><mat-icon>close</mat-icon></button>
+        </div>
+        <div class="p-6">
+          @if (selectedMovementLots.length === 0) {
+            <p class="text-sm text-gray-500 italic">No hay registros de lotes para este movimiento.</p>
+          } @else {
+            <table class="w-full text-left border-collapse text-sm">
+              <thead>
+                <tr class="bg-gray-100 text-gray-600 text-xs">
+                  <th class="p-2">Lote</th>
+                  <th class="p-2">Cantidad Afectada</th>
+                  <th class="p-2">Costo U.</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-100">
+                @for (ml of selectedMovementLots; track ml.id) {
+                  <tr>
+                    <td class="p-2 font-mono font-bold">LOTE-{{ ml.lot?.id }}</td>
+                    <td class="p-2 font-mono font-bold">{{ ml.quantity }} uds.</td>
+                    <td class="p-2">{{ formatMoney(ml.unitCost) }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          }
+        </div>
+        <div class="p-4 border-t border-gray-100 flex justify-end">
+          <button mat-flat-button color="primary" (click)="closeMovementLotsModal()">Cerrar</button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

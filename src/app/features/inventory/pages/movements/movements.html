@@ -1,0 +1,329 @@
+<div class="movements-container">
+  <header class="page-header">
+    <div class="header-titles">
+      <h1 class="page-title">Kardex de Movimientos</h1>
+    </div>
+  </header>
+
+  <mat-card class="toolbar-card" appearance="outlined">
+    <mat-card-content class="p-4 flex justify-between items-center gap-4 flex-wrap">
+      <mat-form-field appearance="outline" class="flex-1 max-w-lg mb-[-1.25em]">
+        <mat-label>Buscar movimiento</mat-label>
+        <mat-icon matPrefix>search</mat-icon>
+        <input 
+          matInput
+          type="text" 
+          [(ngModel)]="searchTerm" 
+          (ngModelChange)="onSearchChange()" 
+          placeholder="Buscar por folio, producto, SKU, notas o usuario..." 
+        />
+        @if (searchTerm) {
+          <button mat-icon-button matSuffix (click)="clearSearch()" title="Limpiar búsqueda">
+            <mat-icon>close</mat-icon>
+          </button>
+        }
+      </mat-form-field>
+
+      <div class="flex items-center gap-3">
+        <mat-chip class="results-badge">
+          Total: {{ totalElements }} {{ totalElements === 1 ? 'registro' : 'registros' }}
+        </mat-chip>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card class="controls-top-card" appearance="outlined">
+    <mat-card-content class="p-3 flex justify-between items-center gap-4 flex-wrap">
+      <div class="flex items-center gap-3 flex-wrap">
+        <mat-form-field appearance="outline" class="w-44 mb-[-1.25em]">
+          <mat-label>Ordenar por</mat-label>
+          <mat-select [ngModel]="sortField" (ngModelChange)="onSortFieldChange($event)">
+            <mat-option value="createdAt">Fecha y hora</mat-option>
+            <mat-option value="quantity">Cantidad movida</mat-option>
+            <mat-option value="id">Folio Kardex</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="w-40 mb-[-1.25em]">
+          <mat-label>Dirección</mat-label>
+          <mat-select [ngModel]="sortOrder" (ngModelChange)="onSortOrderChange($event)">
+            <mat-option value="DESC">Descendente</mat-option>
+            <mat-option value="ASC">Ascendente</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="w-44 mb-[-1.25em]">
+          <mat-label>Tipo Movimiento</mat-label>
+          <mat-select [ngModel]="selectedTypeFilter" (ngModelChange)="onTypeFilterChange($event)">
+            <mat-option value="ALL">Todos los tipos</mat-option>
+            <mat-option value="ENTRADA_COMPRA">Entradas por compra</mat-option>
+            <mat-option value="SALIDA_VENTA">Salidas por venta</mat-option>
+            <mat-option value="AJUSTE_ENTRADA">Ajustes (+)</mat-option>
+            <mat-option value="AJUSTE_SALIDA">Ajustes (-)</mat-option>
+            <mat-option value="AJUSTE_MANUAL">Ajustes manuales</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="w-48 mb-[-1.25em]">
+          <mat-label>Producto</mat-label>
+          <mat-select [ngModel]="selectedProductFilter" (ngModelChange)="onProductFilterChange($event)">
+            <mat-option value="ALL">Todos los productos</mat-option>
+            @for (prod of products; track prod.id) {
+              <mat-option [value]="prod.id != null ? prod.id.toString() : ''">{{ prod.name }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="w-36 mb-[-1.25em]">
+          <mat-label>Desde</mat-label>
+          <input matInput type="date" [(ngModel)]="startDateFilter" (ngModelChange)="onDateFilterChange()" />
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="w-36 mb-[-1.25em]">
+          <mat-label>Hasta</mat-label>
+          <input matInput type="date" [(ngModel)]="endDateFilter" (ngModelChange)="onDateFilterChange()" />
+        </mat-form-field>
+
+        @if (startDateFilter || endDateFilter) {
+          <button mat-icon-button (click)="clearDateFilter()" title="Limpiar fechas">
+            <mat-icon>clear</mat-icon>
+          </button>
+        }
+
+        <mat-form-field appearance="outline" class="w-36 mb-[-1.25em]">
+          <mat-label>Por página</mat-label>
+          <mat-select [ngModel]="pageSize" (ngModelChange)="onPageSizeChange($event)">
+            <mat-option [value]="5">5 por página</mat-option>
+            <mat-option [value]="10">10 por página</mat-option>
+            <mat-option [value]="20">20 por página</mat-option>
+            <mat-option [value]="50">50 por página</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <span class="text-xs text-gray-500 font-medium">Página <strong>{{ currentPage }}</strong> de <strong>{{ totalPages }}</strong></span>
+        <div class="flex items-center gap-1">
+          <button mat-icon-button (click)="goToPage(1)" [disabled]="currentPage === 1" title="Primera página">
+            <mat-icon>first_page</mat-icon>
+          </button>
+          <button mat-icon-button (click)="goToPage(currentPage - 1)" [disabled]="currentPage === 1" title="Anterior">
+            <mat-icon>chevron_left</mat-icon>
+          </button>
+          @for (p of pagesArray; track p) {
+            <button mat-stroked-button (click)="goToPage(p)" [color]="p === currentPage ? 'primary' : ''" class="btn-page-num">
+              {{ p }}
+            </button>
+          }
+          <button mat-icon-button (click)="goToPage(currentPage + 1)" [disabled]="currentPage >= totalPages" title="Siguiente">
+            <mat-icon>chevron_right</mat-icon>
+          </button>
+          <button mat-icon-button (click)="goToPage(totalPages)" [disabled]="currentPage >= totalPages" title="Última página">
+            <mat-icon>last_page</mat-icon>
+          </button>
+        </div>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card class="table-card" appearance="outlined">
+    <mat-card-content>
+      @if (loading) {
+        <div class="loading-state">
+          <mat-spinner diameter="40"></mat-spinner>
+          <p>Cargando movimientos del Kardex...</p>
+        </div>
+      } @else if (filteredMovements.length === 0) {
+        <div class="empty-state">
+          <mat-icon class="empty-icon">swap_vert</mat-icon>
+          <h3 class="text-base font-bold text-gray-800">No se encontraron movimientos registrados</h3>
+          <p class="text-sm text-gray-500">No existen registros que coincidan con los filtros aplicados.</p>
+          @if (searchTerm || selectedTypeFilter !== 'ALL' || selectedProductFilter !== 'ALL' || startDateFilter || endDateFilter) {
+            <button mat-stroked-button (click)="clearSearch(); selectedTypeFilter = 'ALL'; selectedProductFilter = 'ALL'; clearDateFilter()">
+              Restablecer filtros
+            </button>
+          }
+        </div>
+      } @else {
+        <div class="responsive-table-container">
+          <table class="users-table">
+            <thead>
+              <tr>
+                <th>Folio</th>
+                <th>Fecha y Hora</th>
+                <th>Tipo Movimiento</th>
+                <th>Producto</th>
+                <th class="text-center">Cantidad</th>
+                <th class="text-center">Saldo Después</th>
+                <th>Método</th>
+                <th>Referencia</th>
+                <th>Usuario</th>
+                <th>Observaciones</th>
+                <th class="text-right">Detalle</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (m of filteredMovements; track m.id) {
+                <tr>
+                  <td class="font-mono font-bold text-gray-900">#{{ m.id }}</td>
+                  <td class="text-sm text-gray-600">{{ formatDate(m.createdAt) }}</td>
+                  <td>
+                    <span class="status-badge" [ngClass]="getMovementBadgeClass(m.movementType)">
+                      <span class="status-dot"></span>
+                      {{ getMovementLabel(m.movementType) }}
+                    </span>
+                  </td>
+                  <td>
+                    <div class="entity-cell">
+                      <div class="entity-avatar bg-blue-100 text-blue-800">
+                        {{ (m.product?.name || 'P').charAt(0).toUpperCase() }}
+                      </div>
+                      <div>
+                        <div class="font-medium text-gray-900">{{ m.product?.name || 'Producto' }}</div>
+                        <div class="text-xs text-gray-400 font-mono">SKU: {{ m.product?.sku || '-' }}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="text-center font-mono font-bold" [class.text-red-600]="(m.quantity ?? 0) < 0" [class.text-emerald-600]="(m.quantity ?? 0) > 0">
+                    {{ (m.quantity ?? 0) > 0 ? '+' : '' }}{{ m.quantity }}
+                  </td>
+                  <td class="text-center font-mono font-bold text-gray-900">{{ m.balanceAfter }}</td>
+                  <td>
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-slate-100 text-slate-700 font-mono">
+                      {{ m.costingMethod || 'PEPS' }}
+                    </span>
+                  </td>
+                  <td>
+                    @if (m.referenceType === 'PURCHASE') {
+                      <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-700">Compra #{{ m.referenceId }}</span>
+                    } @else if (m.referenceType === 'SALE') {
+                      <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-50 text-purple-700">Venta #{{ m.referenceId }}</span>
+                    } @else {
+                      <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-50 text-amber-700">Ajuste #{{ m.referenceId || m.id }}</span>
+                    }
+                  </td>
+                  <td class="text-sm text-gray-600">{{ m.user?.fullName || 'Sistema' }}</td>
+                  <td class="text-sm text-gray-500 max-w-xs truncate" [title]="m.notes || ''">
+                    {{ m.notes || '—' }}
+                  </td>
+                  <td class="text-right">
+                    <div class="actions-group">
+                      <button mat-icon-button color="primary" (click)="openDetailModal(m)" title="Ver detalle de lotes consumidos/ingresados">
+                        <mat-icon>visibility</mat-icon>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </mat-card-content>
+  </mat-card>
+
+  @if (isDetailModalOpen && selectedMovement) {
+    <div class="modal-backdrop" (click)="closeDetailModal()">
+      <mat-card class="modal-card modal-large" (click)="$event.stopPropagation()">
+        <header class="modal-header">
+          <div class="modal-title-group">
+            <div class="modal-icon-badge">
+              <mat-icon>receipt</mat-icon>
+            </div>
+            <div>
+              <h2 class="modal-title">Detalle de Movimiento #{{ selectedMovement.id }}</h2>
+              <p class="modal-subtitle">
+                {{ getMovementLabel(selectedMovement.movementType) }} | {{ formatDate(selectedMovement.createdAt) }}
+              </p>
+            </div>
+          </div>
+
+          <button mat-icon-button (click)="closeDetailModal()" title="Cerrar modal">
+            <mat-icon>close</mat-icon>
+          </button>
+        </header>
+
+        <div class="modal-body">
+          <div class="detail-cards-grid">
+            <div class="info-card">
+              <span class="info-label">Producto</span>
+              <strong class="info-val text-main">{{ selectedMovement.product?.name }}</strong>
+              <span class="info-sub font-mono">SKU: {{ selectedMovement.product?.sku }}</span>
+              <span class="info-sub">Categoría: {{ selectedMovement.product?.category?.name || 'General' }}</span>
+            </div>
+
+            <div class="info-card">
+              <span class="info-label">Efecto en Almacén</span>
+              <div class="info-row">
+                <span>Cantidad Afectada:</span>
+                <strong [class.text-exit]="(selectedMovement.quantity ?? 0) < 0" [class.text-entry]="(selectedMovement.quantity ?? 0) > 0">
+                  {{ (selectedMovement.quantity ?? 0) > 0 ? '+' : '' }}{{ selectedMovement.quantity }} unidades
+                </strong>
+              </div>
+              <div class="info-row">
+                <span>Saldo en Almacén Después:</span>
+                <strong class="font-mono">{{ selectedMovement.balanceAfter }} unidades</strong>
+              </div>
+              <div class="info-row">
+                <span>Método de Valuación:</span>
+                <span class="method-chip">{{ selectedMovement.costingMethod || 'PEPS' }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="lots-breakdown-section">
+            <h4 class="section-title">Lotes Afectados en este Movimiento</h4>
+
+            @if (loadingLots) {
+              <div class="loading-state">
+                <mat-spinner diameter="30"></mat-spinner>
+                <p>Cargando trazabilidad de lotes...</p>
+              </div>
+            } @else if (movementLots.length === 0) {
+              <div class="empty-state">
+                <p>No se registran lotes directos vinculados a este movimiento (ajuste directo o compra sin lote individual).</p>
+              </div>
+            } @else {
+              <div class="table-responsive">
+                <table class="compact-table">
+                  <thead>
+                    <tr>
+                      <th>Lote ID</th>
+                      <th>Orden de Compra Origen</th>
+                      <th>Fecha Recepción Lote</th>
+                      <th class="text-center">Cantidad Afectada</th>
+                      <th class="text-right">Costo Unitario Lote</th>
+                      <th class="text-right">Monto Total de Costo</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (ml of movementLots; track ml.id) {
+                      <tr>
+                        <td class="font-mono font-medium text-main">#LOT-{{ ml.lot?.id }}</td>
+                        <td class="font-mono text-muted">
+                          {{ ml.lot?.purchaseId ? 'Compra #' + ml.lot?.purchaseId : 'Ajuste Inicial' }}
+                        </td>
+                        <td class="text-muted">{{ formatDate(ml.lot?.receivedAt) }}</td>
+                        <td class="text-center font-bold text-main">{{ ml.quantity }} unidades</td>
+                        <td class="text-right font-mono">{{ formatCurrency(ml.unitCost) }}</td>
+                        <td class="text-right font-bold text-main">
+                          {{ formatCurrency((ml.quantity ?? 0) * (ml.unitCost ?? 0)) }}
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
+          </div>
+        </div>
+
+        <footer class="modal-footer">
+          <button mat-button (click)="closeDetailModal()">
+            Cerrar
+          </button>
+        </footer>
+      </mat-card>
+    </div>
+  }
+</div>

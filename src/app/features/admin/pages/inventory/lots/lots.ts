@@ -1,0 +1,270 @@
+import { Component, OnInit, OnDestroy, inject, ChangeDetectorRef } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router, NavigationEnd } from '@angular/router';
+import { Subscription, filter } from 'rxjs';
+
+import { InventoryService } from '../../../../../core/services/inventory';
+import { ProductService } from '../../../../../core/services/product';
+import { extractHttpErrorMessage } from '../../../../../core/interceptors/error.interceptor';
+import { InventoryLotResponse } from '../../../../../core/models/inventory';
+import { ProductResponse } from '../../../../../core/models/product';
+
+import { MatCardModule } from '@angular/material/card';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatChipsModule } from '@angular/material/chips';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatOptionModule } from '@angular/material/core';
+import { MatCheckboxModule } from '@angular/material/checkbox';
+
+interface ToastState {
+  show: boolean;
+  type: 'success' | 'error';
+  title: string;
+  message: string;
+}
+
+@Component({
+  selector: 'app-admin-lots',
+  standalone: true,
+  imports: [
+    CommonModule,
+    FormsModule,
+    MatCardModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatSelectModule,
+    MatButtonModule,
+    MatIconModule,
+    MatChipsModule,
+    MatProgressSpinnerModule,
+    MatOptionModule,
+    MatCheckboxModule
+  ],
+  templateUrl: './lots.html',
+  styleUrl: './lots.css'
+})
+export class AdminLots implements OnInit, OnDestroy {
+  private inventoryService = inject(InventoryService);
+  private productService = inject(ProductService);
+  private route = inject(ActivatedRoute);
+  private router = inject(Router);
+  private cdr = inject(ChangeDetectorRef);
+
+  private routerSub: Subscription | null = null;
+
+  allLots: InventoryLotResponse[] = [];
+  filteredLots: InventoryLotResponse[] = [];
+  products: ProductResponse[] = [];
+
+  currentPage = 1;
+  pageSize = 10;
+  totalElements = 0;
+  totalPages = 1;
+  sortField: string = 'receivedAt';
+  sortOrder: 'ASC' | 'DESC' = 'DESC';
+
+  searchTerm = '';
+  selectedProductFilter: string = 'ALL';
+  onlyActiveLots: boolean = false;
+
+  loading = true;
+
+  toast: ToastState | null = null;
+  private toastTimeout: any = null;
+
+  ngOnInit(): void {
+    this.loadProducts();
+
+    this.route.queryParams.subscribe(params => {
+      if (params['productId']) {
+        this.selectedProductFilter = params['productId'].toString();
+      }
+      this.loadLots();
+    });
+
+    let initialNavDone = false;
+    this.routerSub = this.router.events
+      .pipe(filter(event => event instanceof NavigationEnd))
+      .subscribe((event: any) => {
+        const url: string = event.urlAfterRedirects || event.url || '';
+        if (url.includes('/lots')) {
+          if (!initialNavDone) {
+            initialNavDone = true;
+          } else {
+            this.loadLots();
+          }
+        } else {
+          initialNavDone = false;
+        }
+      });
+  }
+
+  ngOnDestroy(): void {
+    this.routerSub?.unsubscribe();
+    if (this.toastTimeout) clearTimeout(this.toastTimeout);
+  }
+
+  loadProducts(): void {
+    this.productService.getProducts(0, 200, 'name', 'ASC').subscribe({
+      next: (res) => {
+        if (res?.data?.content) {
+          this.products = res.data.content;
+        }
+      }
+    });
+  }
+
+  loadLots(): void {
+    const pageIndex = Math.max(0, this.currentPage - 1);
+    this.loading = true;
+
+    if (this.selectedProductFilter !== 'ALL') {
+      const prodId = Number(this.selectedProductFilter);
+      if (this.onlyActiveLots) {
+        this.inventoryService.getActiveLotsByProduct(prodId).subscribe({
+          next: (res) => {
+            const list = res?.data || [];
+            this.allLots = list;
+            this.totalElements = list.length;
+            this.totalPages = 1;
+            this.currentPage = 1;
+            this.applyFilter();
+            this.loading = false;
+            this.cdr.detectChanges();
+          },
+          error: (err) => this.handleError(err)
+        });
+      } else {
+        this.inventoryService.getInventoryLotsByProduct(prodId, pageIndex, this.pageSize, this.sortField, this.sortOrder).subscribe({
+          next: (res) => this.handleResponse(res, pageIndex),
+          error: (err) => this.handleError(err)
+        });
+      }
+    } else {
+      this.inventoryService.getInventoryLots(pageIndex, this.pageSize, this.sortField, this.sortOrder).subscribe({
+        next: (res) => this.handleResponse(res, pageIndex),
+        error: (err) => this.handleError(err)
+      });
+    }
+  }
+
+  private handleResponse(res: any, pageIndex: number): void {
+    if (res?.data) {
+      let content = res.data.content || [];
+      if (this.onlyActiveLots) {
+        content = content.filter((l: InventoryLotResponse) => (l.quantityRemaining || 0) > 0);
+      }
+      this.allLots = content;
+      this.totalElements = res.data.totalElements ?? content.length;
+      this.totalPages = Math.max(1, res.data.totalPages ?? 1);
+      const pageNum = (res.data as any).number ?? res.data.pageNumber ?? pageIndex;
+      this.currentPage = pageNum + 1;
+      this.applyFilter();
+    } else {
+      this.allLots = [];
+      this.filteredLots = [];
+      this.totalElements = 0;
+      this.totalPages = 1;
+    }
+    this.loading = false;
+    this.cdr.detectChanges();
+  }
+
+  private handleError(err: any): void {
+    this.allLots = [];
+    this.filteredLots = [];
+    this.totalElements = 0;
+    this.totalPages = 1;
+    this.loading = false;
+    this.showToast('error', 'Error al cargar lotes', extractHttpErrorMessage(err) || 'No se pudieron consultar los lotes.');
+    this.cdr.detectChanges();
+  }
+
+  get pagesArray(): number[] {
+    const pages: number[] = [];
+    for (let i = 1; i <= this.totalPages; i++) {
+      pages.push(i);
+    }
+    return pages;
+  }
+
+  goToPage(page: number): void {
+    if (page >= 1 && page <= this.totalPages && page !== this.currentPage) {
+      this.currentPage = page;
+      this.loadLots();
+    }
+  }
+
+  onPageSizeChange(newSize: number): void {
+    this.pageSize = newSize;
+    this.currentPage = 1;
+    this.loadLots();
+  }
+
+  onSortFieldChange(newField: string): void {
+    this.sortField = newField;
+    this.currentPage = 1;
+    this.loadLots();
+  }
+
+  onSortOrderChange(newOrder: 'ASC' | 'DESC'): void {
+    this.sortOrder = newOrder;
+    this.currentPage = 1;
+    this.loadLots();
+  }
+
+  onProductFilterChange(newProdId: string): void {
+    this.selectedProductFilter = newProdId;
+    this.currentPage = 1;
+    this.loadLots();
+  }
+
+  onActiveLotsToggle(onlyActive: boolean): void {
+    this.onlyActiveLots = onlyActive;
+    this.currentPage = 1;
+    this.loadLots();
+  }
+
+  onSearchChange(): void {
+    this.applyFilter();
+  }
+
+  clearSearch(): void {
+    this.searchTerm = '';
+    this.applyFilter();
+  }
+
+  applyFilter(): void {
+    const term = this.searchTerm.trim().toLowerCase();
+    if (!term) {
+      this.filteredLots = [...this.allLots];
+    } else {
+      this.filteredLots = this.allLots.filter(l => {
+        const idMatch = l.id?.toString() || '';
+        const prodMatch = l.product?.name?.toLowerCase() || '';
+        const skuMatch = l.product?.sku?.toLowerCase() || '';
+        const purchaseMatch = l.purchaseItemId?.toString() || '';
+        return idMatch.includes(term) || prodMatch.includes(term) || skuMatch.includes(term) || purchaseMatch.includes(term);
+      });
+    }
+  }
+
+  showToast(type: 'success' | 'error', title: string, message: string): void {
+    if (this.toastTimeout) clearTimeout(this.toastTimeout);
+    this.toast = { show: true, type, title, message };
+    this.toastTimeout = setTimeout(() => {
+      this.toast = null;
+      this.cdr.detectChanges();
+    }, 4000);
+  }
+
+  closeToast(): void {
+    if (this.toastTimeout) clearTimeout(this.toastTimeout);
+    this.toast = null;
+  }
+}

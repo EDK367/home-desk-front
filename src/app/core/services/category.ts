@@ -26,6 +26,20 @@ export class CategoryService extends ApiService {
     return this.get<PageResponse<CategoryResponse>>('/categories', params);
   }
 
+  getCategoriesAdmin(
+    page: number = 0,
+    size: number = 10,
+    sortField: string = 'createdAt',
+    sortOrder: 'ASC' | 'DESC' = 'DESC'
+  ): Observable<ApiResponse<PageResponse<CategoryResponse>>> {
+    const params = new HttpParams()
+      .set('page', page.toString())
+      .set('size', size.toString())
+      .set('sort', `${sortField},${sortOrder}`);
+
+    return this.get<PageResponse<CategoryResponse>>('/categories/admin', params);
+  }
+
   createCategory(category: CategoryRequest): Observable<ApiResponse<CategoryResponse>> {
     return this.post<CategoryResponse>('/categories', category);
   }

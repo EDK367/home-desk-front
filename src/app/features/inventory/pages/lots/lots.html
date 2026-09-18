@@ -1,0 +1,186 @@
+<div class="lots-container">
+  <header class="page-header">
+    <div class="header-titles">
+      <h1 class="page-title">Lotes de Entrada en Bodega</h1>
+    </div>
+  </header>
+
+  <mat-card class="toolbar-card" appearance="outlined">
+    <mat-card-content class="p-4 flex justify-between items-center gap-4 flex-wrap">
+      <mat-form-field appearance="outline" class="flex-1 max-w-lg mb-[-1.25em]">
+        <mat-label>Buscar lote</mat-label>
+        <mat-icon matPrefix>search</mat-icon>
+        <input 
+          matInput
+          type="text" 
+          [(ngModel)]="searchTerm" 
+          (ngModelChange)="onSearchChange()" 
+          placeholder="Buscar por lote ID, compra, producto o SKU..." 
+        />
+        @if (searchTerm) {
+          <button mat-icon-button matSuffix (click)="clearSearch()" title="Limpiar búsqueda">
+            <mat-icon>close</mat-icon>
+          </button>
+        }
+      </mat-form-field>
+
+      <div class="flex items-center gap-3">
+        <mat-chip class="results-badge">
+          Total: {{ totalElements }} {{ totalElements === 1 ? 'registro' : 'registros' }}
+        </mat-chip>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card class="controls-top-card" appearance="outlined">
+    <mat-card-content class="p-3 flex justify-between items-center gap-4 flex-wrap">
+      <div class="flex items-center gap-3 flex-wrap">
+        <mat-form-field appearance="outline" class="w-44 mb-[-1.25em]">
+          <mat-label>Ordenar por</mat-label>
+          <mat-select [ngModel]="sortField" (ngModelChange)="onSortFieldChange($event)">
+            <mat-option value="receivedAt">Fecha de recepción</mat-option>
+            <mat-option value="quantityRemaining">Cantidad remanente</mat-option>
+            <mat-option value="unitCost">Costo unitario</mat-option>
+            <mat-option value="id">Folio de lote</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="w-40 mb-[-1.25em]">
+          <mat-label>Dirección</mat-label>
+          <mat-select [ngModel]="sortOrder" (ngModelChange)="onSortOrderChange($event)">
+            <mat-option value="DESC">Descendente</mat-option>
+            <mat-option value="ASC">Ascendente</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="w-48 mb-[-1.25em]">
+          <mat-label>Producto</mat-label>
+          <mat-select [ngModel]="selectedProductFilter" (ngModelChange)="onProductFilterChange($event)">
+            <mat-option value="ALL">Todos los productos</mat-option>
+            @for (prod of products; track prod.id) {
+              <mat-option [value]="prod.id != null ? prod.id.toString() : ''">{{ prod.name }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="w-36 mb-[-1.25em]">
+          <mat-label>Por página</mat-label>
+          <mat-select [ngModel]="pageSize" (ngModelChange)="onPageSizeChange($event)">
+            <mat-option [value]="5">5 por página</mat-option>
+            <mat-option [value]="10">10 por página</mat-option>
+            <mat-option [value]="20">20 por página</mat-option>
+            <mat-option [value]="50">50 por página</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <span class="text-xs text-gray-500 font-medium">Página <strong>{{ currentPage }}</strong> de <strong>{{ totalPages }}</strong></span>
+        <div class="flex items-center gap-1">
+          <button mat-icon-button (click)="goToPage(1)" [disabled]="currentPage === 1" title="Primera página">
+            <mat-icon>first_page</mat-icon>
+          </button>
+          <button mat-icon-button (click)="goToPage(currentPage - 1)" [disabled]="currentPage === 1" title="Anterior">
+            <mat-icon>chevron_left</mat-icon>
+          </button>
+          @for (p of pagesArray; track p) {
+            <button mat-stroked-button (click)="goToPage(p)" [color]="p === currentPage ? 'primary' : ''" class="btn-page-num">
+              {{ p }}
+            </button>
+          }
+          <button mat-icon-button (click)="goToPage(currentPage + 1)" [disabled]="currentPage >= totalPages" title="Siguiente">
+            <mat-icon>chevron_right</mat-icon>
+          </button>
+          <button mat-icon-button (click)="goToPage(totalPages)" [disabled]="currentPage >= totalPages" title="Última página">
+            <mat-icon>last_page</mat-icon>
+          </button>
+        </div>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card class="table-card" appearance="outlined">
+    <mat-card-content>
+      @if (loading) {
+        <div class="loading-state">
+          <mat-spinner diameter="40"></mat-spinner>
+          <p>Cargando lotes de inventario...</p>
+        </div>
+      } @else if (filteredLots.length === 0) {
+        <div class="empty-state">
+          <mat-icon class="empty-icon">all_inbox</mat-icon>
+          <h3 class="text-base font-bold text-gray-800">No se encontraron lotes registrados</h3>
+          <p class="text-sm text-gray-500">No existen lotes que coincidan con los criterios seleccionados.</p>
+          @if (searchTerm || selectedProductFilter !== 'ALL' || onlyActiveLots) {
+            <button mat-stroked-button (click)="clearSearch(); selectedProductFilter = 'ALL'; onlyActiveLots = false; loadLots()">
+              Restablecer filtros
+            </button>
+          }
+        </div>
+      } @else {
+        <div class="responsive-table-container">
+          <table class="users-table">
+            <thead>
+              <tr>
+                <th>Folio Lote</th>
+                <th>Producto</th>
+                <th>Compra Origen</th>
+                <th>Fecha Recepción</th>
+                <th class="text-center">Cant. Recibida</th>
+                <th class="text-center">Cant. Remanente</th>
+                <th class="text-right">Costo Unitario</th>
+                <th class="text-right">Valor en Inventario</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (lot of filteredLots; track lot.id) {
+                <tr [class.opacity-60]="(lot.quantityRemaining ?? 0) <= 0">
+                  <td class="font-mono font-bold text-gray-900">#LOT-{{ lot.id }}</td>
+                  <td>
+                    <div class="entity-cell">
+                      <div class="entity-avatar bg-purple-100 text-purple-800">
+                        {{ (lot.product?.name || 'P').charAt(0).toUpperCase() }}
+                      </div>
+                      <div>
+                        <div class="font-medium text-gray-900">{{ lot.product?.name || 'Producto' }}</div>
+                        <div class="text-xs text-gray-400 font-mono">SKU: {{ lot.product?.sku || '-' }}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    @if (lot.purchaseId) {
+                      <span class="font-mono text-xs font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded">Compra #{{ lot.purchaseId }}</span>
+                    } @else {
+                      <span class="text-xs text-gray-400">Ajuste Inicial</span>
+                    }
+                  </td>
+                  <td class="text-sm text-gray-600">{{ formatDate(lot.receivedAt) }}</td>
+                  <td class="text-center font-mono font-semibold text-gray-700">{{ lot.quantityReceived }}</td>
+                  <td class="text-center font-mono font-bold" [class.text-red-600]="(lot.quantityRemaining ?? 0) <= 0" [class.text-emerald-700]="(lot.quantityRemaining ?? 0) > 0">
+                    {{ lot.quantityRemaining }} uds.
+                  </td>
+                  <td class="text-right font-mono text-sm text-gray-600">{{ formatCurrency(lot.unitCost) }}</td>
+                  <td class="text-right font-mono font-bold text-emerald-700">
+                    {{ formatCurrency((lot.quantityRemaining ?? 0) * (lot.unitCost ?? 0)) }}
+                  </td>
+                  <td>
+                    @if ((lot.quantityRemaining ?? 0) <= 0) {
+                      <span class="status-badge status-inactive">
+                        <span class="status-dot"></span> Agotado
+                      </span>
+                    } @else {
+                      <span class="status-badge status-active">
+                        <span class="status-dot"></span> Disponible
+                      </span>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </mat-card-content>
+  </mat-card>
+</div>

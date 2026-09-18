@@ -19,6 +19,16 @@ import {
 import { SupplierResponse, SupplierProductResponse } from '../../../../core/models/supplier';
 import { ProductResponse } from '../../../../core/models/product';
 
+import { MatCardModule } from '@angular/material/card';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatChipsModule } from '@angular/material/chips';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatOptionModule } from '@angular/material/core';
+
 interface ToastState {
   show: boolean;
   type: 'success' | 'error';
@@ -36,7 +46,20 @@ interface PurchaseItemRow {
 @Component({
   selector: 'app-purchases',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    ReactiveFormsModule,
+    MatCardModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatSelectModule,
+    MatButtonModule,
+    MatIconModule,
+    MatChipsModule,
+    MatProgressSpinnerModule,
+    MatOptionModule
+  ],
   templateUrl: './purchases.html',
   styleUrl: './purchases.css'
 })
@@ -52,7 +75,6 @@ export class Purchases implements OnInit, OnDestroy {
 
   private routerSub: Subscription | null = null;
 
-  // Colecciones de datos
   allPurchases: PurchaseResponse[] = [];
   filteredPurchases: PurchaseResponse[] = [];
   suppliers: SupplierResponse[] = [];
@@ -60,7 +82,6 @@ export class Purchases implements OnInit, OnDestroy {
   statuses: PurchaseStatusResponse[] = [];
   supplierProductsMap = new Map<number, SupplierProductResponse[]>();
 
-  // Paginación y ordenamiento
   currentPage = 1;
   pageSize = 10;
   totalElements = 0;
@@ -68,12 +89,10 @@ export class Purchases implements OnInit, OnDestroy {
   sortField: string = 'purchaseDate';
   sortOrder: 'ASC' | 'DESC' = 'DESC';
 
-  // Filtros
   searchTerm = '';
   selectedStatusFilter: string = 'ALL';
   selectedSupplierFilter: string = 'ALL';
 
-  // Flags de carga y modales
   loading = true;
   saving = false;
   statusUpdating = false;
@@ -89,7 +108,6 @@ export class Purchases implements OnInit, OnDestroy {
   newStatusIdToApply: number | null = null;
   modalError: string | null = null;
 
-  // Formulario de nueva compra
   purchaseForm: FormGroup = this.fb.group({
     supplierId: [null, [Validators.required]],
     statusId: [null],
@@ -97,7 +115,6 @@ export class Purchases implements OnInit, OnDestroy {
     notes: ['', [Validators.maxLength(255)]]
   });
 
-  // Items de compra reactivos
   itemRows: PurchaseItemRow[] = [];
 
   toast: ToastState | null = null;
@@ -143,7 +160,6 @@ export class Purchases implements OnInit, OnDestroy {
   }
 
   loadCatalogData(): void {
-    // Cargar Estados de Compra
     this.purchaseService.getPurchaseStatuses().subscribe({
       next: (res) => {
         if (res?.data) {
@@ -157,7 +173,6 @@ export class Purchases implements OnInit, OnDestroy {
       }
     });
 
-    // Cargar Proveedores Activos
     this.supplierService.getSuppliers(0, 100, 'name', 'ASC', false).subscribe({
       next: (res) => {
         if (res?.data?.content) {
@@ -166,7 +181,6 @@ export class Purchases implements OnInit, OnDestroy {
       }
     });
 
-    // Cargar Productos Activos
     this.productService.getProducts(0, 150, 'name', 'ASC').subscribe({
       next: (res) => {
         if (res?.data?.content) {
@@ -293,14 +307,12 @@ export class Purchases implements OnInit, OnDestroy {
     const term = this.searchTerm.trim().toLowerCase();
 
     this.filteredPurchases = this.allPurchases.filter(purchase => {
-      // Filtro por Estado
       if (this.selectedStatusFilter !== 'ALL') {
         if (purchase.status?.name !== this.selectedStatusFilter) {
           return false;
         }
       }
 
-      // Filtro por Proveedor
       if (this.selectedSupplierFilter !== 'ALL') {
         const supId = Number(this.selectedSupplierFilter);
         if (purchase.supplier?.id !== supId) {
@@ -308,7 +320,6 @@ export class Purchases implements OnInit, OnDestroy {
         }
       }
 
-      // Búsqueda por texto
       if (!term) return true;
 
       const idMatch = purchase.id?.toString().includes(term) ?? false;
@@ -322,7 +333,6 @@ export class Purchases implements OnInit, OnDestroy {
     });
   }
 
-  // Creación de nueva compra
   openCreateModal(prefillSupplierId?: number, prefillProductId?: number): void {
     this.modalError = null;
     this.purchaseForm.reset({
@@ -437,7 +447,6 @@ export class Purchases implements OnInit, OnDestroy {
       }
     }
 
-    // Si no está registrado en supplier-products, intentar usar el precio de venta como referencia o dejar en blanco
     this.updateItemSubtotal(index);
   }
 
@@ -474,7 +483,6 @@ export class Purchases implements OnInit, OnDestroy {
       return;
     }
 
-    // Validar productos duplicados y valores
     const productIds = new Set<number>();
     const itemsPayload: PurchaseItemRequest[] = [];
 
@@ -542,7 +550,6 @@ export class Purchases implements OnInit, OnDestroy {
     });
   }
 
-  // Visualización de detalle de compra
   openDetailModal(purchase: PurchaseResponse): void {
     this.selectedPurchase = purchase;
     this.selectedPurchaseItems = purchase.items || [];
@@ -594,7 +601,6 @@ export class Purchases implements OnInit, OnDestroy {
     }
   }
 
-  // Cambio de estado
   openStatusModal(purchase: PurchaseResponse): void {
     if (purchase.status?.name === 'CANCELADA') {
       this.showToast('error', 'Acción no permitida', 'No se puede modificar el estado de una orden cancelada.');
@@ -646,7 +652,6 @@ export class Purchases implements OnInit, OnDestroy {
     });
   }
 
-  // Cancelar compra
   cancelPurchase(purchase: PurchaseResponse): void {
     if (!purchase.id) return;
 
@@ -674,7 +679,6 @@ export class Purchases implements OnInit, OnDestroy {
     }
   }
 
-  // Notificaciones Toast
   showToast(type: 'success' | 'error', title: string, message: string): void {
     if (this.toastTimeout) clearTimeout(this.toastTimeout);
     this.toast = { show: true, type, title, message };
@@ -688,7 +692,6 @@ export class Purchases implements OnInit, OnDestroy {
     }
   }
 
-  // Helpers de visualización
   formatCurrency(value?: number): string {
     if (value == null) return 'Q 0.00';
     return new Intl.NumberFormat('es-GT', {

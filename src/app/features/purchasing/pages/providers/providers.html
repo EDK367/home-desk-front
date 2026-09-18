@@ -2,581 +2,442 @@
   <header class="page-header">
     <div class="header-titles">
       <h1 class="page-title">Proveedores</h1>
-      <p class="page-subtitle">Directorio comercial de proveedores y catálogo de productos negociados.</p>
     </div>
   </header>
 
-  <!-- Barra de Herramientas -->
-  <section class="toolbar-card">
-    <div class="search-box">
-      <span class="search-icon">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="11" cy="11" r="8"/>
-          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-        </svg>
-      </span>
-      <input 
-        type="text" 
-        [(ngModel)]="searchTerm" 
-        (ngModelChange)="onSearchChange()" 
-        placeholder="Buscar por nombre, NIT, contacto, correo o dirección..." 
-        class="search-input"
-      />
-      @if (searchTerm) {
-        <button (click)="clearSearch()" class="clear-search-btn" title="Limpiar búsqueda">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="18" y1="6" x2="6" y2="18"/>
-            <line x1="6" y1="6" x2="18" y2="18"/>
-          </svg>
+  <mat-card class="toolbar-card" appearance="outlined">
+    <mat-card-content class="p-4 flex justify-between items-center gap-4 flex-wrap">
+      <mat-form-field appearance="outline" class="flex-1 max-w-lg mb-[-1.25em]">
+        <mat-label>Buscar proveedor</mat-label>
+        <mat-icon matPrefix>search</mat-icon>
+        <input matInput type="text" [(ngModel)]="searchTerm" (ngModelChange)="onSearchChange()"
+          placeholder="Buscar por nombre, NIT, contacto, correo o dirección..." />
+        @if (searchTerm) {
+        <button mat-icon-button matSuffix (click)="clearSearch()" title="Limpiar búsqueda">
+          <mat-icon>close</mat-icon>
         </button>
-      }
-    </div>
+        }
+      </mat-form-field>
 
-    <div class="toolbar-info">
-      <span class="results-badge">
-        Total: <strong>{{ totalElements }}</strong> {{ totalElements === 1 ? 'proveedor' : 'proveedores' }}
-      </span>
-    </div>
-  </section>
+      <div class="flex items-center gap-3">
+        <mat-chip class="results-badge">
+          Total: {{ totalElements }} {{ totalElements === 1 ? 'proveedor' : 'proveedores' }}
+        </mat-chip>
+      </div>
+    </mat-card-content>
+  </mat-card>
 
-  <!-- Controles de Ordenamiento y Paginación -->
-  <section class="controls-top-card">
-    <div class="controls-row">
-      <div class="control-group">
-        <label for="sortFieldSelect">Ordenar por:</label>
-        <select 
-          id="sortFieldSelect" 
-          [ngModel]="sortField" 
-          (ngModelChange)="onSortFieldChange($event)" 
-          class="select-control"
-        >
-          <option value="name">Nombre comercial</option>
-          <option value="createdAt">Fecha de registro</option>
-          <option value="id">ID Proveedor</option>
-        </select>
+  <mat-card class="controls-top-card" appearance="outlined">
+    <mat-card-content class="p-3 flex justify-between items-center gap-4 flex-wrap">
+      <div class="flex items-center gap-3 flex-wrap">
+        <mat-form-field appearance="outline" class="w-44 mb-[-1.25em]">
+          <mat-label>Ordenar por</mat-label>
+          <mat-select [ngModel]="sortField" (ngModelChange)="onSortFieldChange($event)">
+            <mat-option value="name">Nombre comercial</mat-option>
+            <mat-option value="createdAt">Fecha de registro</mat-option>
+            <mat-option value="id">ID Proveedor</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="w-40 mb-[-1.25em]">
+          <mat-label>Dirección</mat-label>
+          <mat-select [ngModel]="sortOrder" (ngModelChange)="onSortOrderChange($event)">
+            <mat-option value="ASC">Ascendente</mat-option>
+            <mat-option value="DESC">Descendente</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-checkbox [ngModel]="includeInactive" (ngModelChange)="onIncludeInactiveChange($event)" color="primary"
+          class="inactive-checkbox">
+          Incluir inactivos
+        </mat-checkbox>
+
+        <mat-form-field appearance="outline" class="w-36 mb-[-1.25em]">
+          <mat-label>Por página</mat-label>
+          <mat-select [ngModel]="pageSize" (ngModelChange)="onPageSizeChange($event)">
+            <mat-option [value]="5">5 por página</mat-option>
+            <mat-option [value]="10">10 por página</mat-option>
+            <mat-option [value]="20">20 por página</mat-option>
+          </mat-select>
+        </mat-form-field>
       </div>
 
-      <div class="control-group">
-        <label for="sortOrderSelect">Dirección:</label>
-        <select 
-          id="sortOrderSelect" 
-          [ngModel]="sortOrder" 
-          (ngModelChange)="onSortOrderChange($event)" 
-          class="select-control"
-        >
-          <option value="ASC">Ascendente (ASC)</option>
-          <option value="DESC">Descendente (DESC)</option>
-        </select>
-      </div>
-
-      <div class="control-group checkbox-group">
-        <label class="checkbox-label">
-          <input 
-            type="checkbox" 
-            [ngModel]="includeInactive" 
-            (ngModelChange)="onIncludeInactiveChange($event)" 
-            class="checkbox-input"
-          />
-          <span>Incluir inactivos</span>
-        </label>
-      </div>
-
-      <div class="control-group">
-        <label for="pageSizeSelect">Por página:</label>
-        <select 
-          id="pageSizeSelect" 
-          [ngModel]="pageSize" 
-          (ngModelChange)="onPageSizeChange($event)" 
-          class="select-control"
-        >
-          <option [ngValue]="5">5 por página</option>
-          <option [ngValue]="10">10 por página</option>
-          <option [ngValue]="20">20 por página</option>
-        </select>
-      </div>
-    </div>
-
-    <div class="pagination-top-controls">
-      <span class="page-indicator">Página <strong>{{ currentPage }}</strong> de <strong>{{ totalPages }}</strong></span>
-
-      <div class="pagination-buttons">
-        <button (click)="goToPage(1)" [disabled]="currentPage === 1" class="btn-page" title="Primera página">
-          &laquo;
-        </button>
-        <button (click)="goToPage(currentPage - 1)" [disabled]="currentPage === 1" class="btn-page" title="Anterior">
-          &lsaquo;
-        </button>
-        
-        @for (p of pagesArray; track p) {
-          <button (click)="goToPage(p)" class="btn-page" [class.btn-page-active]="p === currentPage">
+      <div class="flex items-center gap-3">
+        <span class="text-xs text-gray-500 font-medium">Página <strong>{{ currentPage }}</strong> de <strong>{{
+            totalPages }}</strong></span>
+        <div class="flex items-center gap-1">
+          <button mat-icon-button (click)="goToPage(1)" [disabled]="currentPage === 1" title="Primera página">
+            <mat-icon>first_page</mat-icon>
+          </button>
+          <button mat-icon-button (click)="goToPage(currentPage - 1)" [disabled]="currentPage === 1" title="Anterior">
+            <mat-icon>chevron_left</mat-icon>
+          </button>
+          @for (p of pagesArray; track p) {
+          <button mat-stroked-button (click)="goToPage(p)" [color]="p === currentPage ? 'primary' : ''"
+            class="btn-page-num">
             {{ p }}
           </button>
-        }
-
-        <button (click)="goToPage(currentPage + 1)" [disabled]="currentPage >= totalPages" class="btn-page" title="Siguiente">
-          &rsaquo;
-        </button>
-        <button (click)="goToPage(totalPages)" [disabled]="currentPage >= totalPages" class="btn-page" title="Última página">
-          &raquo;
-        </button>
+          }
+          <button mat-icon-button (click)="goToPage(currentPage + 1)" [disabled]="currentPage >= totalPages"
+            title="Siguiente">
+            <mat-icon>chevron_right</mat-icon>
+          </button>
+          <button mat-icon-button (click)="goToPage(totalPages)" [disabled]="currentPage >= totalPages"
+            title="Última página">
+            <mat-icon>last_page</mat-icon>
+          </button>
+        </div>
       </div>
-    </div>
-  </section>
+    </mat-card-content>
+  </mat-card>
 
-  <!-- Tabla de Proveedores -->
-  <section class="table-card">
-    @if (loading) {
+  <mat-card class="table-card" appearance="outlined">
+    <mat-card-content>
+      @if (loading) {
       <div class="loading-state">
-        <div class="spinner"></div>
+        <mat-spinner diameter="40"></mat-spinner>
         <p>Cargando directorio de proveedores...</p>
       </div>
-    } @else {
-      @if (filteredSuppliers.length === 0) {
-        <div class="empty-state">
-          <div class="empty-icon">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/>
-              <path d="M15 18H9"/>
-              <path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.62l-3.48-4.35A1 1 0 0 0 17.52 8H14"/>
-              <circle cx="7" cy="18" r="2"/>
-              <circle cx="17" cy="18" r="2"/>
-            </svg>
+      } @else if (filteredSuppliers.length === 0) {
+      <div class="empty-state">
+        <mat-icon class="empty-icon">local_shipping</mat-icon>
+        <h3 class="text-base font-bold text-gray-800">No se encontraron proveedores</h3>
+        <p class="text-sm text-gray-500">No hay registros que coincidan con la búsqueda actual.</p>
+        @if (searchTerm) {
+        <button mat-stroked-button (click)="clearSearch()">Limpiar búsqueda</button>
+        }
+      </div>
+      } @else {
+      <div class="responsive-table-container">
+        <table class="users-table">
+          <thead>
+            <tr>
+              <th>Proveedor</th>
+              <th>NIT / Identificación</th>
+              <th>Contacto</th>
+              <th>Teléfonos</th>
+              <th>Correo Electrónico</th>
+              <th>Estado</th>
+              <th class="text-right">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (supplier of filteredSuppliers; track supplier.id) {
+            <tr [class.opacity-60]="!supplier.isActive">
+              <td>
+                <div class="entity-cell">
+                  <div class="entity-avatar bg-amber-100 text-amber-800">
+                    {{ supplier.name ? supplier.name.charAt(0).toUpperCase() : 'P' }}
+                  </div>
+                  <div class="font-medium text-gray-900">{{ supplier.name }}</div>
+                </div>
+              </td>
+              <td class="font-mono text-sm text-gray-600">{{ supplier.taxNumber || 'C/F' }}</td>
+              <td class="text-sm text-gray-900">{{ supplier.contactName || '—' }}</td>
+              <td class="text-sm text-gray-600">{{ getPhoneList(supplier) }}</td>
+              <td class="text-sm text-gray-600">{{ supplier.email || '—' }}</td>
+              <td>
+                @if (supplier.isActive) {
+                <span class="status-badge status-active">
+                  <span class="status-dot"></span> Activo
+                </span>
+                } @else {
+                <span class="status-badge status-inactive">
+                  <span class="status-dot"></span> Inactivo
+                </span>
+                }
+              </td>
+              <td class="text-right">
+                <div class="actions-group">
+                  <button mat-icon-button (click)="openProductsModal(supplier)"
+                    title="Ver catálogo de productos asociados">
+                    <mat-icon color="accent">inventory_2</mat-icon>
+                  </button>
+
+                  @if (supplier.isActive) {
+                  <button mat-icon-button color="primary" (click)="newPurchaseWithSupplier(supplier)"
+                    title="Emitir orden de compra a este proveedor">
+                    <mat-icon>shopping_cart</mat-icon>
+                  </button>
+                  }
+                </div>
+              </td>
+            </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      }
+    </mat-card-content>
+  </mat-card>
+
+  @if (isDetailModalOpen && selectedSupplier) {
+  <div class="modal-backdrop" (click)="closeDetailModal()">
+    <mat-card class="modal-card modal-compact" (click)="$event.stopPropagation()">
+      <header class="modal-header">
+        <div class="modal-title-group">
+          <div class="modal-icon-badge">
+            <mat-icon>local_shipping</mat-icon>
           </div>
-          <h3>No se encontraron proveedores</h3>
-          <p>No hay registros que coincidan con la búsqueda actual.</p>
-          @if (searchTerm) {
-            <button (click)="clearSearch()" class="btn-secondary-sm">Limpiar búsqueda</button>
+          <div>
+            <h2 class="modal-title">{{ selectedSupplier.name }}</h2>
+            <p class="modal-subtitle">Ficha técnica y comercial de proveedor.</p>
+          </div>
+        </div>
+
+        <button mat-icon-button (click)="closeDetailModal()" title="Cerrar modal">
+          <mat-icon>close</mat-icon>
+        </button>
+      </header>
+
+      <div class="modal-body">
+        <div class="supplier-detail-list">
+          <div class="detail-item">
+            <span class="item-label">NIT / Número Tributario:</span>
+            <strong class="item-val font-mono">{{ selectedSupplier.taxNumber || 'C/F' }}</strong>
+          </div>
+
+          <div class="detail-item">
+            <span class="item-label">Persona de Contacto:</span>
+            <span class="item-val">{{ selectedSupplier.contactName || 'No registrado' }}</span>
+          </div>
+
+          <div class="detail-item">
+            <span class="item-label">Correo Electrónico:</span>
+            <span class="item-val">{{ selectedSupplier.email || 'No registrado' }}</span>
+          </div>
+
+          <div class="detail-item">
+            <span class="item-label">Teléfonos:</span>
+            <span class="item-val">{{ getPhoneList(selectedSupplier) }}</span>
+          </div>
+
+          <div class="detail-item">
+            <span class="item-label">Dirección Fiscal / Bodega:</span>
+            <span class="item-val">{{ selectedSupplier.address || 'No registrada' }}</span>
+          </div>
+
+          <div class="detail-item">
+            <span class="item-label">Estado Operativo:</span>
+            <span>
+              @if (selectedSupplier.isActive) {
+              <span class="status-badge status-active"><span class="status-dot"></span> Activo</span>
+              } @else {
+              <span class="status-badge status-inactive"><span class="status-dot"></span> Inactivo</span>
+              }
+            </span>
+          </div>
+
+          @if (selectedSupplier.createdAt) {
+          <div class="detail-item">
+            <span class="item-label">Fecha de Alta:</span>
+            <span class="item-val">{{ formatDate(selectedSupplier.createdAt) }}</span>
+          </div>
           }
         </div>
-      } @else {
-        <div class="table-responsive">
-          <table class="providers-table">
-            <thead>
-              <tr>
-                <th>Proveedor</th>
-                <th>NIT / Identificación</th>
-                <th>Contacto</th>
-                <th>Teléfonos</th>
-                <th>Correo Electrónico</th>
-                <th>Estado</th>
-                <th class="text-right">Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (supplier of filteredSuppliers; track supplier.id) {
-                <tr [class.inactive-row]="!supplier.isActive">
-                  <td class="font-medium text-main">
-                    <div class="supplier-avatar-cell">
-                      <span class="supplier-avatar" [class.avatar-inactive]="!supplier.isActive">
-                        {{ supplier.name ? supplier.name.charAt(0).toUpperCase() : 'P' }}
-                      </span>
-                      <span class="supplier-name-text">{{ supplier.name }}</span>
-                    </div>
-                  </td>
-                  <td class="font-mono text-muted">{{ supplier.taxNumber || 'C/F' }}</td>
-                  <td class="text-main">{{ supplier.contactName || '—' }}</td>
-                  <td class="text-muted">{{ getPhoneList(supplier) }}</td>
-                  <td class="text-muted">{{ supplier.email || '—' }}</td>
-                  <td>
-                    @if (supplier.isActive) {
-                      <span class="status-badge status-active">
-                        <span class="status-dot"></span> Activo
-                      </span>
-                    } @else {
-                      <span class="status-badge status-inactive">
-                        <span class="status-dot"></span> Inactivo
-                      </span>
-                    }
-                  </td>
+      </div>
+
+      <footer class="modal-footer">
+        @if (selectedSupplier.isActive) {
+        <button mat-flat-button color="primary" (click)="closeDetailModal(); newPurchaseWithSupplier(selectedSupplier)">
+          Nueva Compra a este Proveedor
+        </button>
+        }
+        <button mat-button (click)="closeDetailModal()">
+          Cerrar
+        </button>
+      </footer>
+    </mat-card>
+  </div>
+  }
+
+  @if (isProductsModalOpen && selectedSupplier) {
+  <div class="modal-backdrop" (click)="closeProductsModal()">
+    <mat-card class="modal-card modal-large" (click)="$event.stopPropagation()">
+      <header class="modal-header">
+        <div class="modal-title-group">
+          <div class="modal-icon-badge">
+            <mat-icon>inventory_2</mat-icon>
+          </div>
+          <div>
+            <h2 class="modal-title">Productos de: {{ selectedSupplier.name }}</h2>
+            <p class="modal-subtitle">Asocia productos comerciales y administra los costos de compra pactados.</p>
+          </div>
+        </div>
+
+        <button mat-icon-button (click)="closeProductsModal()" title="Cerrar modal">
+          <mat-icon>close</mat-icon>
+        </button>
+      </header>
+
+      <div class="modal-body">
+        @if (modalError) {
+        <div class="modal-error-banner">
+          <mat-icon color="warn">error</mat-icon>
+          <span>{{ modalError }}</span>
+        </div>
+        }
+
+        <div class="link-product-card">
+          <h4 class="card-title-sm">+ Asociar Nuevo Producto a este Proveedor</h4>
+          <form [formGroup]="linkProductForm" (ngSubmit)="linkProduct()" class="form-row-link">
+            <mat-form-field appearance="outline" class="flex-2">
+              <mat-label>Producto *</mat-label>
+              <mat-select formControlName="productId">
+                <mat-option [value]="null" disabled>Seleccionar producto...</mat-option>
+                @for (prod of availableProducts; track prod.id) {
+                <mat-option [value]="prod.id">{{ prod.name }} (SKU: {{ prod.sku }})</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="flex-1">
+              <mat-label>SKU Proveedor</mat-label>
+              <input matInput formControlName="supplierSku" placeholder="Ej. PROV-001" maxlength="30" />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="flex-1">
+              <mat-label>Costo Negociado (Q) *</mat-label>
+              <input matInput type="number" formControlName="cost" placeholder="0.00" min="0" step="0.01" />
+            </mat-form-field>
+
+            <button type="submit" mat-flat-button color="primary" class="btn-link-submit"
+              [disabled]="savingProduct || linkProductForm.invalid">
+              @if (savingProduct) {
+              <mat-spinner diameter="18"></mat-spinner>
+              } @else {
+              <span>Asociar</span>
+              }
+            </button>
+          </form>
+        </div>
+
+        <div class="supplier-products-list">
+          <div class="list-header">
+            <h4>Catálogo de Precios Negociados</h4>
+            <span class="items-count">{{ supplierProducts.length }} producto(s)</span>
+          </div>
+
+          @if (loadingProductsModal) {
+          <div class="loading-state">
+            <mat-spinner diameter="32"></mat-spinner>
+            <p>Cargando productos del proveedor...</p>
+          </div>
+          } @else if (supplierProducts.length === 0) {
+          <div class="empty-state">
+            <p>Este proveedor aún no tiene productos vinculados en el catálogo.</p>
+            <span class="text-muted text-sm">Utiliza el formulario superior para asociar productos de HomeDesk con este
+              proveedor.</span>
+          </div>
+          } @else {
+          <div class="table-responsive">
+            <table class="compact-table">
+              <thead>
+                <tr>
+                  <th>Producto</th>
+                  <th>SKU General</th>
+                  <th>SKU Proveedor</th>
+                  <th class="text-right">Costo Negociado</th>
+                  <th class="text-right">Último Costo Compra</th>
+                  <th class="text-right">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (sp of supplierProducts; track sp.id) {
+                <tr>
+                  <td class="font-medium text-main">{{ sp.product?.name || 'Producto #' + sp.id }}</td>
+                  <td class="font-mono text-muted">{{ sp.product?.sku || '—' }}</td>
+                  <td class="font-mono">{{ sp.supplierSku || '—' }}</td>
+                  <td class="text-right font-bold text-main">{{ formatCurrency(sp.cost) }}</td>
+                  <td class="text-right text-muted">{{ formatCurrency(sp.lastPurchaseCost) }}</td>
                   <td class="text-right">
                     <div class="actions-group">
-                      <!-- Ver productos y precios negociados -->
-                      <button (click)="openProductsModal(supplier)" class="btn-icon btn-catalog" title="Ver catálogo de productos asociados">
-                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                          <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/>
-                          <path d="m3.3 7 8.7 5 8.7-5"/>
-                          <path d="M12 22V12"/>
-                        </svg>
-                        <span>Catálogo</span>
+                      <button mat-icon-button (click)="openEditProductModal(sp)" title="Modificar costo o SKU">
+                        <mat-icon>edit</mat-icon>
                       </button>
-
-                      <!-- Generar nueva compra pre-seleccionando este proveedor -->
-                      @if (supplier.isActive) {
-                        <button (click)="newPurchaseWithSupplier(supplier)" class="btn-icon btn-purchase" title="Emitir orden de compra a este proveedor">
-                          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="8" cy="21" r="1"/>
-                            <circle cx="19" cy="21" r="1"/>
-                            <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/>
-                          </svg>
-                          <span>Comprar</span>
-                        </button>
-                      }
-
-                      <!-- Ver detalle -->
-                      <button (click)="openDetailModal(supplier)" class="btn-icon btn-info" title="Ver ficha completa del proveedor">
-                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                          <circle cx="12" cy="12" r="3"/>
-                        </svg>
-                        <span>Ficha</span>
+                      <button mat-icon-button color="warn" (click)="unlinkProduct(sp)" title="Desvincular producto">
+                        <mat-icon>delete</mat-icon>
                       </button>
                     </div>
                   </td>
                 </tr>
-              }
-            </tbody>
-          </table>
-        </div>
-      }
-    }
-  </section>
-
-  <!-- MODAL 1: DETALLE DE PROVEEDOR -->
-  @if (isDetailModalOpen && selectedSupplier) {
-    <div class="modal-backdrop" (click)="closeDetailModal()">
-      <div class="modal-card modal-compact" (click)="$event.stopPropagation()">
-        <header class="modal-header">
-          <div class="modal-title-group">
-            <div class="modal-icon-badge">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/>
-                <circle cx="7" cy="18" r="2"/>
-                <circle cx="17" cy="18" r="2"/>
-              </svg>
-            </div>
-            <div>
-              <h2 class="modal-title">{{ selectedSupplier.name }}</h2>
-              <p class="modal-subtitle">Ficha técnica y comercial de proveedor.</p>
-            </div>
-          </div>
-
-          <button (click)="closeDetailModal()" class="btn-modal-close" title="Cerrar modal">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="18" y1="6" x2="6" y2="18"/>
-              <line x1="6" y1="6" x2="18" y2="18"/>
-            </svg>
-          </button>
-        </header>
-
-        <div class="modal-body">
-          <div class="supplier-detail-list">
-            <div class="detail-item">
-              <span class="item-label">NIT / Número Tributario:</span>
-              <strong class="item-val font-mono">{{ selectedSupplier.taxNumber || 'C/F' }}</strong>
-            </div>
-
-            <div class="detail-item">
-              <span class="item-label">Persona de Contacto:</span>
-              <span class="item-val">{{ selectedSupplier.contactName || 'No registrado' }}</span>
-            </div>
-
-            <div class="detail-item">
-              <span class="item-label">Correo Electrónico:</span>
-              <span class="item-val">{{ selectedSupplier.email || 'No registrado' }}</span>
-            </div>
-
-            <div class="detail-item">
-              <span class="item-label">Teléfonos:</span>
-              <span class="item-val">{{ getPhoneList(selectedSupplier) }}</span>
-            </div>
-
-            <div class="detail-item">
-              <span class="item-label">Dirección Fiscal / Bodega:</span>
-              <span class="item-val">{{ selectedSupplier.address || 'No registrada' }}</span>
-            </div>
-
-            <div class="detail-item">
-              <span class="item-label">Estado Operativo:</span>
-              <span>
-                @if (selectedSupplier.isActive) {
-                  <span class="status-badge status-active"><span class="status-dot"></span> Activo</span>
-                } @else {
-                  <span class="status-badge status-inactive"><span class="status-dot"></span> Inactivo</span>
                 }
-              </span>
-            </div>
-
-            @if (selectedSupplier.createdAt) {
-              <div class="detail-item">
-                <span class="item-label">Fecha de Alta:</span>
-                <span class="item-val">{{ formatDate(selectedSupplier.createdAt) }}</span>
-              </div>
-            }
+              </tbody>
+            </table>
           </div>
-        </div>
-
-        <footer class="modal-footer">
-          @if (selectedSupplier.isActive) {
-            <button (click)="closeDetailModal(); newPurchaseWithSupplier(selectedSupplier)" class="btn-save">
-              Nueva Compra a este Proveedor
-            </button>
           }
-          <button (click)="closeDetailModal()" class="btn-cancel">
-            Cerrar
-          </button>
-        </footer>
+        </div>
       </div>
-    </div>
+
+      <footer class="modal-footer">
+        <button mat-button (click)="closeProductsModal()">
+          Cerrar
+        </button>
+      </footer>
+    </mat-card>
+  </div>
   }
 
-  <!-- MODAL 2: CATÁLOGO DE PRODUCTOS DEL PROVEEDOR -->
-  @if (isProductsModalOpen && selectedSupplier) {
-    <div class="modal-backdrop" (click)="closeProductsModal()">
-      <div class="modal-card modal-large" (click)="$event.stopPropagation()">
-        <header class="modal-header">
-          <div class="modal-title-group">
-            <div class="modal-icon-badge">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/>
-                <path d="m3.3 7 8.7 5 8.7-5"/>
-                <path d="M12 22V12"/>
-              </svg>
-            </div>
-            <div>
-              <h2 class="modal-title">Productos de: {{ selectedSupplier.name }}</h2>
-              <p class="modal-subtitle">Asocia productos comerciales y administra los costos de compra pactados.</p>
-            </div>
-          </div>
-
-          <button (click)="closeProductsModal()" class="btn-modal-close" title="Cerrar modal">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="18" y1="6" x2="6" y2="18"/>
-              <line x1="6" y1="6" x2="18" y2="18"/>
-            </svg>
-          </button>
-        </header>
-
-        <div class="modal-body">
-          @if (modalError) {
-            <div class="modal-error-banner">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"/>
-                <line x1="12" y1="8" x2="12" y2="12"/>
-                <line x1="12" y1="16" x2="12.01" y2="16"/>
-              </svg>
-              <span>{{ modalError }}</span>
-            </div>
-          }
-
-          <!-- Formulario para Asociar Nuevo Producto -->
-          <div class="link-product-card">
-            <h4 class="card-title-sm">+ Asociar Nuevo Producto a este Proveedor</h4>
-            <form [formGroup]="linkProductForm" (ngSubmit)="linkProduct()" class="form-row-link">
-              <div class="form-field flex-2">
-                <label for="linkProdSelect">Producto *</label>
-                <select id="linkProdSelect" formControlName="productId" class="hd-input hd-select">
-                  <option [ngValue]="null" disabled>Seleccionar producto...</option>
-                  @for (prod of availableProducts; track prod.id) {
-                    <option [ngValue]="prod.id">{{ prod.name }} (SKU: {{ prod.sku }})</option>
-                  }
-                </select>
-              </div>
-
-              <div class="form-field flex-1">
-                <label for="linkSku">SKU Proveedor</label>
-                <input 
-                  id="linkSku" 
-                  type="text" 
-                  formControlName="supplierSku" 
-                  placeholder="Ej. PROV-001" 
-                  class="hd-input"
-                  maxlength="30"
-                />
-              </div>
-
-              <div class="form-field flex-1">
-                <label for="linkCost">Costo Negociado (Q) *</label>
-                <input 
-                  id="linkCost" 
-                  type="number" 
-                  formControlName="cost" 
-                  placeholder="0.00" 
-                  min="0" 
-                  step="0.01"
-                  class="hd-input"
-                />
-              </div>
-
-              <button type="submit" class="btn-save btn-link-submit" [disabled]="savingProduct || linkProductForm.invalid">
-                @if (savingProduct) {
-                  <span class="btn-spinner"></span>
-                } @else {
-                  <span>Asociar</span>
-                }
-              </button>
-            </form>
-          </div>
-
-          <!-- Tabla de Productos Asociados -->
-          <div class="supplier-products-list">
-            <div class="list-header">
-              <h4>Catálogo de Precios Negociados</h4>
-              <span class="items-count">{{ supplierProducts.length }} producto(s)</span>
-            </div>
-
-            @if (loadingProductsModal) {
-              <div class="loading-state">
-                <div class="spinner"></div>
-                <p>Cargando productos del proveedor...</p>
-              </div>
-            } @else if (supplierProducts.length === 0) {
-              <div class="empty-state">
-                <p>Este proveedor aún no tiene productos vinculados en el catálogo.</p>
-                <span class="text-muted text-sm">Utiliza el formulario superior para asociar productos de HomeDesk con este proveedor.</span>
-              </div>
-            } @else {
-              <div class="table-responsive">
-                <table class="compact-table">
-                  <thead>
-                    <tr>
-                      <th>Producto</th>
-                      <th>SKU General</th>
-                      <th>SKU Proveedor</th>
-                      <th class="text-right">Costo Negociado</th>
-                      <th class="text-right">Último Costo Compra</th>
-                      <th class="text-right">Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    @for (sp of supplierProducts; track sp.id) {
-                      <tr>
-                        <td class="font-medium text-main">{{ sp.product?.name || 'Producto #' + sp.id }}</td>
-                        <td class="font-mono text-muted">{{ sp.product?.sku || '—' }}</td>
-                        <td class="font-mono">{{ sp.supplierSku || '—' }}</td>
-                        <td class="text-right font-bold text-main">{{ formatCurrency(sp.cost) }}</td>
-                        <td class="text-right text-muted">{{ formatCurrency(sp.lastPurchaseCost) }}</td>
-                        <td class="text-right">
-                          <div class="actions-group">
-                            <button (click)="openEditProductModal(sp)" class="btn-icon btn-view" title="Modificar costo o SKU">
-                              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                              </svg>
-                              <span>Editar</span>
-                            </button>
-                            <button (click)="unlinkProduct(sp)" class="btn-icon btn-cancel-order" title="Desvincular producto">
-                              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polyline points="3 6 5 6 21 6"/>
-                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                              </svg>
-                              <span>Quitar</span>
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    }
-                  </tbody>
-                </table>
-              </div>
-            }
-          </div>
-        </div>
-
-        <footer class="modal-footer">
-          <button (click)="closeProductsModal()" class="btn-cancel">
-            Cerrar
-          </button>
-        </footer>
-      </div>
-    </div>
-  }
-
-  <!-- MODAL 3: EDITAR COSTO / SKU DE PRODUCTO ASOCIADO -->
   @if (isEditProductModalOpen && selectedSupplierProduct) {
-    <div class="modal-backdrop" (click)="closeEditProductModal()">
-      <div class="modal-card modal-compact" (click)="$event.stopPropagation()">
-        <header class="modal-header">
-          <div class="modal-title-group">
-            <div class="modal-icon-badge">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-              </svg>
-            </div>
-            <div>
-              <h2 class="modal-title">Actualizar Costo / SKU</h2>
-              <p class="modal-subtitle">{{ selectedSupplierProduct.product?.name }}</p>
-            </div>
+  <div class="modal-backdrop" (click)="closeEditProductModal()">
+    <mat-card class="modal-card modal-compact" (click)="$event.stopPropagation()">
+      <header class="modal-header">
+        <div class="modal-title-group">
+          <div class="modal-icon-badge">
+            <mat-icon>edit</mat-icon>
           </div>
+          <div>
+            <h2 class="modal-title">Actualizar Costo / SKU</h2>
+            <p class="modal-subtitle">{{ selectedSupplierProduct.product?.name }}</p>
+          </div>
+        </div>
 
-          <button (click)="closeEditProductModal()" class="btn-modal-close" title="Cerrar modal">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="18" y1="6" x2="6" y2="18"/>
-              <line x1="6" y1="6" x2="18" y2="18"/>
-            </svg>
+        <button mat-icon-button (click)="closeEditProductModal()" title="Cerrar modal">
+          <mat-icon>close</mat-icon>
+        </button>
+      </header>
+
+      <form [formGroup]="editProductForm" (ngSubmit)="saveEditProduct()" class="modal-body">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>SKU Proveedor</mat-label>
+          <input matInput formControlName="supplierSku" placeholder="Ej. PROV-SKU-99" maxlength="30" />
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Costo Negociado (Q) *</mat-label>
+          <input matInput type="number" formControlName="cost" min="0" step="0.01" />
+        </mat-form-field>
+
+        <footer class="modal-footer">
+          <button type="button" mat-button (click)="closeEditProductModal()" [disabled]="savingProduct">
+            Cancelar
           </button>
-        </header>
-
-        <form [formGroup]="editProductForm" (ngSubmit)="saveEditProduct()" class="modal-body">
-          <div class="form-field">
-            <label for="editSku">SKU Proveedor</label>
-            <input 
-              id="editSku" 
-              type="text" 
-              formControlName="supplierSku" 
-              placeholder="Ej. PROV-SKU-99" 
-              class="hd-input"
-              maxlength="30"
-            />
-          </div>
-
-          <div class="form-field">
-            <label for="editCost">Costo Negociado (Q) *</label>
-            <input 
-              id="editCost" 
-              type="number" 
-              formControlName="cost" 
-              min="0" 
-              step="0.01" 
-              class="hd-input"
-            />
-          </div>
-
-          <footer class="modal-footer">
-            <button type="button" (click)="closeEditProductModal()" class="btn-cancel" [disabled]="savingProduct">
-              Cancelar
-            </button>
-            <button type="submit" class="btn-save" [disabled]="savingProduct || editProductForm.invalid">
-              @if (savingProduct) {
-                <span class="btn-spinner"></span>
-                <span>Guardando...</span>
-              } @else {
-                <span>Actualizar</span>
-              }
-            </button>
-          </footer>
-        </form>
-      </div>
-    </div>
+          <button type="submit" mat-flat-button color="primary" [disabled]="savingProduct || editProductForm.invalid">
+            @if (savingProduct) {
+            <mat-spinner diameter="18"></mat-spinner>
+            <span>Guardando...</span>
+            } @else {
+            <span>Actualizar</span>
+            }
+          </button>
+        </footer>
+      </form>
+    </mat-card>
+  </div>
   }
 
-  <!-- TOASTS -->
   @if (toast?.show) {
-    <div class="toast-container" [ngClass]="toast?.type">
-      <div class="toast-icon">
-        @if (toast?.type === 'success') {
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-            <polyline points="22 4 12 14.01 9 11.01"/>
-          </svg>
-        } @else {
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10"/>
-            <line x1="12" y1="8" x2="12" y2="12"/>
-            <line x1="12" y1="16" x2="12.01" y2="16"/>
-          </svg>
-        }
-      </div>
-      <div class="toast-content">
-        <h4 class="toast-title">{{ toast?.title }}</h4>
-        <p class="toast-message">{{ toast?.message }}</p>
-      </div>
-      <button (click)="closeToast()" class="toast-close" title="Cerrar notificación">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <line x1="18" y1="6" x2="6" y2="18"/>
-          <line x1="6" y1="6" x2="18" y2="18"/>
-        </svg>
-      </button>
+  <div class="toast-container" [ngClass]="toast?.type">
+    <div class="toast-icon">
+      <mat-icon>{{ toast?.type === 'success' ? 'check_circle' : 'error' }}</mat-icon>
     </div>
+    <div class="toast-content">
+      <h4 class="toast-title">{{ toast?.title }}</h4>
+      <p class="toast-message">{{ toast?.message }}</p>
+    </div>
+    <button mat-icon-button (click)="closeToast()" title="Cerrar notificación">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
   }
 </div>

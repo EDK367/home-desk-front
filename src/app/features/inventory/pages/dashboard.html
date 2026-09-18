@@ -1,1 +1,90 @@
-<p>dashboard works!</p>
+<div class="dashboard-container">
+  <header class="page-header">
+    <div class="header-titles">
+      <h1 class="page-title">Control y Gestión de Inventario</h1>
+    </div>
+    <div class="header-actions">
+      <a mat-flat-button color="primary" routerLink="/inventory/stock" [queryParams]="{ action: 'adjust' }">
+        <mat-icon>tune</mat-icon>
+        <span>Ajuste de Existencias</span>
+      </a>
+    </div>
+  </header>
+
+  <mat-card class="welcome-banner" appearance="outlined">
+    <mat-card-content class="banner-content">
+      <div class="banner-text">
+        <h2>Hola, {{ userFirstName }}</h2>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <section class="stats-grid">
+    <mat-card class="stat-card" appearance="outlined" [class.stat-warning]="lowStockCount > 0">
+      <mat-card-content class="stat-content">
+        <div class="stat-icon icon-alerts">
+          <mat-icon color="warn">warning</mat-icon>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Alertas de Stock Bajo</span>
+          <strong class="stat-value">{{ loadingStats ? '...' : lowStockCount }}</strong>
+          <span class="stat-hint">Existencias en nivel crítico</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="stat-card" appearance="outlined">
+      <mat-card-content class="stat-content">
+        <div class="stat-icon icon-movements">
+          <mat-icon>swap_vert</mat-icon>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Movimientos Registrados</span>
+          <strong class="stat-value">{{ loadingStats ? '...' : totalMovements }}</strong>
+          <span class="stat-hint">Transacciones en Kardex</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </section>
+
+  <section class="shortcuts-section">
+    <h3 class="section-heading">Accesos Directos del Módulo</h3>
+    <div class="shortcuts-grid">
+      <mat-card class="shortcut-card" appearance="outlined" routerLink="/inventory/stock">
+        <mat-card-content class="shortcut-content">
+          <div class="shortcut-icon icon-stock">
+            <mat-icon>warehouse</mat-icon>
+          </div>
+          <div class="shortcut-text">
+            <h4>Control de Existencias</h4>
+          </div>
+          <mat-icon class="shortcut-arrow">chevron_right</mat-icon>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="shortcut-card" appearance="outlined" routerLink="/inventory/movements">
+        <mat-card-content class="shortcut-content">
+          <div class="shortcut-icon icon-movements">
+            <mat-icon>receipt_long</mat-icon>
+          </div>
+          <div class="shortcut-text">
+            <h4>Kardex de Movimientos</h4>
+          </div>
+          <mat-icon class="shortcut-arrow">chevron_right</mat-icon>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="shortcut-card" appearance="outlined" routerLink="/inventory/lots">
+        <mat-card-content class="shortcut-content">
+          <div class="shortcut-icon icon-products">
+            <mat-icon>all_inbox</mat-icon>
+          </div>
+          <div class="shortcut-text">
+            <h4>Lotes de Inventario</h4>
+          </div>
+          <mat-icon class="shortcut-arrow">chevron_right</mat-icon>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </section>
+</div>

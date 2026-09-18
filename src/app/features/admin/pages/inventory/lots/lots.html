@@ -1,0 +1,219 @@
+<div class="lots-container">
+  @if (toast) {
+  <div class="fixed top-6 right-6 z-50 flex items-center gap-3 p-4 bg-white rounded-lg shadow-lg border-l-4"
+    [class.border-emerald-600]="toast.type === 'success'" [class.border-red-600]="toast.type === 'error'">
+    <mat-icon [class.text-emerald-600]="toast.type === 'success'" [class.text-red-600]="toast.type === 'error'">
+      {{ toast.type === 'success' ? 'check_circle' : 'error' }}
+    </mat-icon>
+    <div class="flex flex-col text-sm">
+      <strong class="font-semibold text-gray-900">{{ toast.title }}</strong>
+      <span class="text-gray-600">{{ toast.message }}</span>
+    </div>
+    <button mat-icon-button (click)="closeToast()"><mat-icon>close</mat-icon></button>
+  </div>
+  }
+
+  <header class="page-header">
+    <div class="header-titles">
+      <h1 class="page-title">Lotes de Entrada en Bodega</h1>
+    </div>
+  </header>
+
+  <mat-card class="toolbar-card" appearance="outlined">
+    <mat-card-content class="p-4 flex justify-between items-center gap-4 flex-wrap">
+      <mat-form-field appearance="outline" class="flex-1 max-w-lg mb-[-1.25em]">
+        <mat-label>Buscar lote</mat-label>
+        <mat-icon matPrefix>search</mat-icon>
+        <input matInput type="text" [(ngModel)]="searchTerm" (ngModelChange)="onSearchChange()"
+          placeholder="Buscar por lote ID, compra, producto o SKU..." />
+        @if (searchTerm) {
+        <button mat-icon-button matSuffix (click)="clearSearch()" title="Limpiar búsqueda">
+          <mat-icon>close</mat-icon>
+        </button>
+        }
+      </mat-form-field>
+
+      <div class="flex items-center gap-3">
+        <mat-chip class="results-badge">
+          Total: {{ totalElements }} {{ totalElements === 1 ? 'registro' : 'registros' }}
+        </mat-chip>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card class="controls-top-card" appearance="outlined">
+    <mat-card-content class="p-3 flex justify-between items-center gap-4 flex-wrap">
+      <div class="flex items-center gap-3 flex-wrap">
+        <mat-form-field appearance="outline" class="w-44 mb-[-1.25em]">
+          <mat-label>Ordenar por</mat-label>
+          <mat-select [ngModel]="sortField" (ngModelChange)="onSortFieldChange($event)">
+            <mat-option value="receivedAt">Fecha de recepción</mat-option>
+            <mat-option value="quantityRemaining">Cantidad remanente</mat-option>
+            <mat-option value="unitCost">Costo unitario</mat-option>
+            <mat-option value="id">Folio de lote</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="w-40 mb-[-1.25em]">
+          <mat-label>Dirección</mat-label>
+          <mat-select [ngModel]="sortOrder" (ngModelChange)="onSortOrderChange($event)">
+            <mat-option value="DESC">Descendente</mat-option>
+            <mat-option value="ASC">Ascendente</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="w-48 mb-[-1.25em]">
+          <mat-label>Producto</mat-label>
+          <mat-select [ngModel]="selectedProductFilter" (ngModelChange)="onProductFilterChange($event)">
+            <mat-option value="ALL">Todos los productos</mat-option>
+            @for (prod of products; track prod.id) {
+            @if (prod.id) {
+            <mat-option [value]="prod.id.toString()">{{ prod.name }}</mat-option>
+            }
+            }
+          </mat-select>
+        </mat-form-field>
+      </div>
+
+      <div class="flex items-center gap-4 flex-wrap">
+        <mat-form-field appearance="outline" class="w-36 mb-[-1.25em]">
+          <mat-label>Por página</mat-label>
+          <mat-select [ngModel]="pageSize" (ngModelChange)="onPageSizeChange($event)">
+            <mat-option [value]="5">5 por pág.</mat-option>
+            <mat-option [value]="10">10 por pág.</mat-option>
+            <mat-option [value]="20">20 por pág.</mat-option>
+            <mat-option [value]="50">50 por pág.</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-gray-500">Página <strong>{{ currentPage }}</strong> de <strong>{{ totalPages
+              }}</strong></span>
+          <div class="flex items-center gap-1">
+            <button mat-icon-button (click)="goToPage(1)" [disabled]="currentPage === 1" title="Primera página">
+              <mat-icon>first_page</mat-icon>
+            </button>
+            <button mat-icon-button (click)="goToPage(currentPage - 1)" [disabled]="currentPage === 1" title="Anterior">
+              <mat-icon>chevron_left</mat-icon>
+            </button>
+            @for (p of pagesArray; track p) {
+            <button mat-stroked-button (click)="goToPage(p)" [color]="p === currentPage ? 'primary' : ''"
+              class="btn-page-num">
+              {{ p }}
+            </button>
+            }
+            <button mat-icon-button (click)="goToPage(currentPage + 1)" [disabled]="currentPage >= totalPages"
+              title="Siguiente">
+              <mat-icon>chevron_right</mat-icon>
+            </button>
+            <button mat-icon-button (click)="goToPage(totalPages)" [disabled]="currentPage >= totalPages"
+              title="Última página">
+              <mat-icon>last_page</mat-icon>
+            </button>
+          </div>
+        </div>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card class="table-card" appearance="outlined">
+    <mat-card-content>
+      @if (loading) {
+      <div class="loading-state">
+        <mat-spinner diameter="40"></mat-spinner>
+        <p>Cargando lotes de inventario...</p>
+      </div>
+      } @else {
+      @if (filteredLots.length === 0) {
+      <div class="empty-state">
+        <mat-icon class="empty-icon">layers_clear</mat-icon>
+        <h3>No se encontraron lotes</h3>
+        <p>No existen lotes de entrada registrados que cumplan los filtros actuales.</p>
+        @if (searchTerm || selectedProductFilter !== 'ALL' || onlyActiveLots) {
+        <button mat-stroked-button color="primary"
+          (click)="clearSearch(); selectedProductFilter = 'ALL'; onlyActiveLots = false; loadLots()">
+          Restablecer filtros
+        </button>
+        }
+      </div>
+      } @else {
+      <div class="responsive-table-container">
+        <table class="users-table">
+          <thead>
+            <tr>
+              <th>Lote ID</th>
+              <th>Producto</th>
+              <th>SKU</th>
+              <th>Compra Ref.</th>
+              <th>Fecha Recepción</th>
+              <th>Cant. Inicial</th>
+              <th>Cant. Remanente</th>
+              <th>Costo Unit.</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (lot of filteredLots; track lot.id) {
+            <tr>
+              <td class="font-mono font-bold text-emerald-800">
+                #{{ lot.id }}
+              </td>
+
+              <td class="font-medium text-main">
+                <div class="entity-cell">
+                  <span class="entity-avatar">
+                    <mat-icon class="!text-base !w-4 !h-4 flex items-center justify-center">warehouse</mat-icon>
+                  </span>
+                  <div class="flex flex-col">
+                    <span class="font-semibold text-gray-900">{{ lot.product?.name }}</span>
+                    <span class="text-xs text-gray-500">{{ lot.product?.category?.name || 'General' }}</span>
+                  </div>
+                </div>
+              </td>
+
+              <td class="font-mono text-muted">{{ lot.product?.sku }}</td>
+
+              <td class="font-mono text-sm">
+                @if (lot.purchaseItemId) {
+                <span class="bg-gray-100 px-2 py-0.5 rounded text-gray-700">Ítem #{{ lot.purchaseItemId }}</span>
+                } @else {
+                <span class="text-gray-400 italic">Inicial / Ajuste</span>
+                }
+              </td>
+
+              <td class="text-xs text-gray-600">
+                {{ lot.receivedAt | date:'dd/MM/yyyy HH:mm' }}
+              </td>
+
+              <td class="font-mono">{{ lot.quantityReceived }} uds.</td>
+
+              <td class="font-mono font-bold" [class.text-emerald-700]="(lot.quantityRemaining || 0) > 0"
+                [class.text-gray-400]="(lot.quantityRemaining || 0) === 0">
+                {{ lot.quantityRemaining || 0 }} uds.
+              </td>
+
+              <td class="font-mono text-sm">
+                Q{{ lot.unitCost | number:'1.2-2' }}
+              </td>
+
+              <td>
+                @if ((lot.quantityRemaining || 0) > 0) {
+                <span class="status-badge status-active">
+                  <span class="status-dot"></span> Con Stock
+                </span>
+                } @else {
+                <span class="status-badge status-inactive">
+                  <span class="status-dot"></span> Agotado
+                </span>
+                }
+              </td>
+            </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      }
+      }
+    </mat-card-content>
+  </mat-card>
+</div>

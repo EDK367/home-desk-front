@@ -1,0 +1,371 @@
+<div class="clients-container">
+  @if (toast) {
+    <div class="custom-toast" [class.toast-success]="toast.type === 'success'" [class.toast-error]="toast.type === 'error'">
+      <mat-icon>{{ toast.type === 'success' ? 'check_circle' : 'error' }}</mat-icon>
+      <div class="toast-text">
+        <strong>{{ toast.title }}</strong>
+        <span>{{ toast.message }}</span>
+      </div>
+      <button mat-icon-button (click)="closeToast()" class="toast-close">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+  
+  }
+
+  <header class="page-header">
+    <div class="header-titles">
+      <h1 class="page-title">Directorio de Clientes</h1>
+    </div>
+    <div class="header-actions">
+      <button mat-flat-button color="primary" class="btn-create" (click)="openCreateModal()">
+        <mat-icon>person_add</mat-icon>
+        <span>Nuevo Cliente</span>
+      </button>
+    </div>
+  </header>
+
+  <mat-card class="toolbar-card" appearance="outlined">
+    <mat-card-content class="p-4 flex justify-between items-center gap-4 flex-wrap">
+      <mat-form-field appearance="outline" class="flex-1 max-w-lg mb-[-1.25em]">
+        <mat-label>Buscar clientes</mat-label>
+        <mat-icon matPrefix>search</mat-icon>
+        <input matInput type="text" [(ngModel)]="searchTerm" (ngModelChange)="onSearchChange()" placeholder="Buscar por nombre, NIT, teléfono, correo...">
+        @if (searchTerm) {
+          <button mat-icon-button matSuffix (click)="clearSearch()" title="Limpiar búsqueda">
+            <mat-icon>close</mat-icon>
+          </button>
+        }
+      </mat-form-field>
+
+      <div class="flex items-center gap-3">
+        <mat-chip class="results-badge">
+          Total: {{ totalElements }} {{ totalElements === 1 ? 'cliente' : 'clientes' }}
+        </mat-chip>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card class="controls-top-card" appearance="outlined">
+    <mat-card-content class="p-3 flex justify-between items-center gap-4 flex-wrap">
+      <div class="flex items-center gap-3 flex-wrap">
+        <mat-form-field appearance="outline" class="w-44 mb-[-1.25em]">
+          <mat-label>Ordenar por</mat-label>
+          <mat-select [ngModel]="sortField" (ngModelChange)="onSortFieldChange($event)">
+            <mat-option value="fullName">Nombre</mat-option>
+            <mat-option value="taxNumber">NIT</mat-option>
+            <mat-option value="id">ID</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="w-40 mb-[-1.25em]">
+          <mat-label>Dirección</mat-label>
+          <mat-select [ngModel]="sortOrder" (ngModelChange)="onSortOrderChange($event)">
+            <mat-option value="ASC">Ascendente</mat-option>
+            <mat-option value="DESC">Descendente</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="w-48 mb-[-1.25em]">
+          <mat-label>Tipo de Contribuyente</mat-label>
+          <mat-select [(value)]="taxFilter" (selectionChange)="onFilterChange()">
+            <mat-option value="ALL">Todos los clientes</mat-option>
+            <mat-option value="NIT">Con NIT</mat-option>
+            <mat-option value="CF">Consumidor Final (CF)</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="w-36 mb-[-1.25em]">
+          <mat-label>Por página</mat-label>
+          <mat-select [ngModel]="pageSize" (ngModelChange)="onPageSizeChange($event)">
+            <mat-option [value]="5">5 por página</mat-option>
+            <mat-option [value]="10">10 por página</mat-option>
+            <mat-option [value]="20">20 por página</mat-option>
+            <mat-option [value]="50">50 por página</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <span class="text-xs text-gray-500 font-medium">Página <strong>{{ currentPage }}</strong> de <strong>{{ totalPages }}</strong></span>
+        <div class="flex items-center gap-1">
+          <button mat-icon-button (click)="goToPage(1)" [disabled]="currentPage === 1" title="Primera página">
+            <mat-icon>first_page</mat-icon>
+          </button>
+          <button mat-icon-button (click)="goToPage(currentPage - 1)" [disabled]="currentPage === 1" title="Anterior">
+            <mat-icon>chevron_left</mat-icon>
+          </button>
+          @for (p of pagesArray; track p) {
+            <button mat-stroked-button (click)="goToPage(p)" [color]="p === currentPage ? 'primary' : ''" class="btn-page-num">
+              {{ p }}
+            </button>
+          }
+          <button mat-icon-button (click)="goToPage(currentPage + 1)" [disabled]="currentPage >= totalPages" title="Siguiente">
+            <mat-icon>chevron_right</mat-icon>
+          </button>
+          <button mat-icon-button (click)="goToPage(totalPages)" [disabled]="currentPage >= totalPages" title="Última página">
+            <mat-icon>last_page</mat-icon>
+          </button>
+        </div>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card class="table-card" appearance="outlined">
+    <mat-card-content>
+      @if (loading) {
+        <div class="loading-state">
+          <mat-spinner diameter="40"></mat-spinner>
+          <p>Cargando cartera de clientes...</p>
+        </div>
+      } @else if (filteredCustomers.length === 0) {
+        <div class="empty-state">
+          <mat-icon class="empty-icon">people_outline</mat-icon>
+          <p class="empty-title">No se encontraron clientes</p>
+          <p class="empty-subtitle">No existen registros que coincidan con el criterio de búsqueda o filtro seleccionado.</p>
+          <button mat-flat-button color="primary" (click)="openCreateModal()">
+            <mat-icon>person_add</mat-icon>
+            <span>Registrar Primer Cliente</span>
+          </button>
+        </div>
+      } @else {
+        <div class="responsive-table-container">
+          <table class="users-table">
+            <thead>
+              <tr>
+                <th>Cliente / Razón Social</th>
+                <th>NIT / Identificación</th>
+                <th>Contacto</th>
+                <th>Dirección</th>
+                <th>Estado</th>
+                <th class="text-right">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (c of paginatedCustomers; track c.id) {
+                <tr>
+                  <td>
+                    <div class="entity-cell">
+                      <div class="entity-avatar bg-indigo-100 text-indigo-800">
+                        {{ (c.fullName || 'C').charAt(0).toUpperCase() }}
+                      </div>
+                      <div>
+                        <div class="font-medium text-gray-900">{{ c.fullName }}</div>
+                        <div class="text-xs text-gray-400 font-mono">ID: #{{ c.id }}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="font-mono text-xs font-semibold text-slate-700 bg-slate-100 px-2.5 py-0.5 rounded">
+                      {{ c.taxNumber || 'CF' }}
+                    </span>
+                  </td>
+                  <td>
+                    <div class="text-sm">
+                      @if (c.email) {
+                        <div class="text-gray-700">{{ c.email }}</div>
+                      }
+                      @if (c.phone) {
+                        <div class="text-xs text-gray-400">{{ c.phone }}</div>
+                      }
+                      @if (!c.email && !c.phone) {
+                        <span class="text-gray-400">—</span>
+                      }
+                    </div>
+                  </td>
+                  <td>
+                    <span class="text-sm text-gray-600">{{ c.address || 'Ciudad' }}</span>
+                  </td>
+                  <td>
+                    <span class="status-badge status-active">
+                      <span class="status-dot"></span> Activo
+                    </span>
+                  </td>
+                  <td class="text-right">
+                    <div class="actions-group">
+                      <button mat-icon-button color="primary" (click)="createSaleForCustomer(c)" title="Nueva Venta">
+                        <mat-icon>shopping_cart</mat-icon>
+                      </button>
+                      <button mat-icon-button (click)="openHistoryModal(c)" title="Historial de Compras">
+                        <mat-icon>history</mat-icon>
+                      </button>
+                      <button mat-icon-button (click)="openEditModal(c)" title="Editar Cliente">
+                        <mat-icon>edit</mat-icon>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </mat-card-content>
+  </mat-card>
+
+  @if (isModalOpen) {
+    <div class="modal-backdrop" (click)="closeModal()">
+      <div class="modal-dialog" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div class="modal-title-wrap">
+            <mat-icon color="primary">{{ isEditMode ? 'edit' : 'person_add' }}</mat-icon>
+            <div>
+              <h2 class="modal-title">{{ isEditMode ? 'Editar Cliente' : 'Registrar Nuevo Cliente' }}</h2>
+              <p class="modal-subtitle">Ingrese los datos generales y tributarios del cliente.</p>
+            </div>
+          </div>
+          <button mat-icon-button (click)="closeModal()">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+
+        @if (modalError) {
+          <div class="modal-alert-error">
+            <mat-icon>error_outline</mat-icon>
+            <span>{{ modalError }}</span>
+          </div>
+        }
+
+        <form [formGroup]="customerForm" (ngSubmit)="saveCustomer()" class="modal-body">
+          <div class="form-grid">
+            <div class="col-span-2">
+              <mat-form-field appearance="outline" class="w-full">
+                <mat-label>Nombre Completo / Razón Social *</mat-label>
+                <input matInput formControlName="fullName" placeholder="Ej: Corporación Vista Verde S.A.">
+                @if (customerForm.get('fullName')?.touched && customerForm.get('fullName')?.invalid) {
+                  <mat-error>El nombre del cliente es obligatorio (mínimo 3 caracteres).</mat-error>
+                }
+              </mat-form-field>
+            </div>
+
+            <div>
+              <mat-form-field appearance="outline" class="w-full">
+                <mat-label>NIT / Identificación Tributaria</mat-label>
+                <input matInput formControlName="taxNumber" placeholder="Ej: 1234567-8 o CF">
+              </mat-form-field>
+            </div>
+
+            <div>
+              <mat-form-field appearance="outline" class="w-full">
+                <mat-label>Teléfono</mat-label>
+                <input matInput formControlName="phone" placeholder="Ej: 502 2345-6789">
+              </mat-form-field>
+            </div>
+
+            <div class="col-span-2">
+              <mat-form-field appearance="outline" class="w-full">
+                <mat-label>Correo Electrónico</mat-label>
+                <input matInput type="email" formControlName="email" placeholder="cliente@correo.com">
+                @if (customerForm.get('email')?.touched && customerForm.get('email')?.invalid) {
+                  <mat-error>Ingrese un correo electrónico válido.</mat-error>
+                }
+              </mat-form-field>
+            </div>
+
+            <div class="col-span-2">
+              <mat-form-field appearance="outline" class="w-full">
+                <mat-label>Dirección Fiscal / Entrega</mat-label>
+                <textarea matInput rows="2" formControlName="address" placeholder="Ej: 4ta Avenida 12-45 Zona 10, Ciudad de Guatemala"></textarea>
+              </mat-form-field>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button mat-stroked-button type="button" (click)="closeModal()" [disabled]="saving">Cancelar</button>
+            <button mat-flat-button color="primary" type="submit" [disabled]="saving || customerForm.invalid">
+              @if (saving) {
+                <mat-spinner diameter="18" class="inline-spinner"></mat-spinner>
+                <span>Guardando...</span>
+              } @else {
+                <span>{{ isEditMode ? 'Guardar Cambios' : 'Registrar Cliente' }}</span>
+              }
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+
+  @if (isHistoryModalOpen && selectedCustomer) {
+    <div class="modal-backdrop" (click)="closeHistoryModal()">
+      <div class="modal-dialog modal-dialog-lg" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div class="modal-title-wrap">
+            <mat-icon color="primary">history_edu</mat-icon>
+            <div>
+              <h2 class="modal-title">Historial de Ventas - {{ selectedCustomer.fullName }}</h2>
+              <p class="modal-subtitle font-mono">NIT: {{ selectedCustomer.taxNumber || 'CF' }} | {{ customerSales.length }} registro(s)</p>
+            </div>
+          </div>
+          <button mat-icon-button (click)="closeHistoryModal()">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+
+        <div class="modal-body">
+          @if (loadingHistory) {
+            <div class="loading-state">
+              <mat-spinner diameter="36"></mat-spinner>
+              <p>Consultando historial de ventas...</p>
+            </div>
+          } @else if (customerSales.length === 0) {
+            <div class="empty-state-modal">
+              <mat-icon>receipt_long</mat-icon>
+              <p>Este cliente aún no registra transacciones de compra.</p>
+              <button mat-flat-button color="primary" (click)="closeHistoryModal(); createSaleForCustomer(selectedCustomer)">
+                <mat-icon>add_shopping_cart</mat-icon>
+                <span>Crear Primera Venta</span>
+              </button>
+            </div>
+          } @else {
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>No. Factura</th>
+                    <th>Fecha</th>
+                    <th>Subtotal</th>
+                    <th>IVA (12%)</th>
+                    <th>Total</th>
+                    <th>Estado</th>
+                    <th class="text-right">Acción</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (s of customerSales; track s.id) {
+                    <tr>
+                      <td class="font-mono font-bold">{{ s.invoiceNumber || ('FAC-' + s.id) }}</td>
+                      <td>{{ formatDate(s.saleDate) }}</td>
+                      <td>{{ formatMoney(s.subtotal) }}</td>
+                      <td>{{ formatMoney(s.taxAmount) }}</td>
+                      <td class="total-cell font-bold text-emerald">{{ formatMoney(s.totalAmount) }}</td>
+                      <td>
+                        <mat-chip class="status-badge" [class.status-paid]="s.status?.name === 'COMPLETED' || s.status?.name === 'ENTREGADO' || s.status?.name === 'FACTURADO'">
+                          {{ s.status?.name || 'Completada' }}
+                        </mat-chip>
+                      </td>
+                      <td class="text-right">
+                        <button mat-stroked-button (click)="generateInvoicePdf(s)" title="Descargar Factura PDF" class="btn-pdf-sm">
+                          <mat-icon>picture_as_pdf</mat-icon>
+                          <span>PDF</span>
+                        </button>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        </div>
+
+        <div class="modal-footer">
+          <button mat-stroked-button (click)="closeHistoryModal()">Cerrar</button>
+          <button mat-flat-button color="primary" (click)="closeHistoryModal(); createSaleForCustomer(selectedCustomer)">
+            <mat-icon>add_shopping_cart</mat-icon>
+            <span>Nueva Venta a este Cliente</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

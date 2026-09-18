@@ -1,0 +1,269 @@
+<div class="p-6 w-full flex flex-col gap-6">
+  @if (toast) {
+    <div class="fixed top-6 right-6 z-50 flex items-center gap-3 p-4 bg-white rounded-lg shadow-lg border-l-4" [class.border-emerald-600]="toast.type === 'success'" [class.border-red-600]="toast.type === 'error'">
+      <mat-icon [class.text-emerald-600]="toast.type === 'success'" [class.text-red-600]="toast.type === 'error'">
+        {{ toast.type === 'success' ? 'check_circle' : 'error' }}
+      </mat-icon>
+      <div class="flex flex-col text-sm">
+        <strong class="font-semibold text-gray-900">{{ toast.title }}</strong>
+        <span class="text-gray-600">{{ toast.message }}</span>
+      </div>
+      <button mat-icon-button (click)="closeToast()"><mat-icon>close</mat-icon></button>
+    </div>
+  }
+
+  <header class="flex justify-between items-center flex-wrap gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900">Compra</h1>
+    </div>
+  </header>
+
+  <mat-card class="toolbar-card" appearance="outlined">
+    <mat-card-content class="p-4 flex justify-between items-center gap-4 flex-wrap">
+      <mat-form-field appearance="outline" class="flex-1 max-w-lg mb-[-1.25em]">
+        <mat-label>Buscar órdenes de compra</mat-label>
+        <mat-icon matPrefix>search</mat-icon>
+        <input matInput type="text" [(ngModel)]="searchTerm" (ngModelChange)="onFilterChange()" placeholder="Buscar por ID, proveedor o notas...">
+        @if (searchTerm) {
+          <button mat-icon-button matSuffix (click)="clearSearch()" title="Limpiar búsqueda">
+            <mat-icon>close</mat-icon>
+          </button>
+        }
+      </mat-form-field>
+
+      <div class="flex items-center gap-3">
+        <mat-chip class="results-badge">
+          Total: {{ totalElements }} {{ totalElements === 1 ? 'registro' : 'registros' }}
+        </mat-chip>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card class="controls-top-card" appearance="outlined">
+    <mat-card-content class="p-3 flex justify-between items-center gap-4 flex-wrap">
+      <div class="flex items-center gap-3 flex-wrap">
+        <mat-form-field appearance="outline" class="w-44 mb-[-1.25em]">
+          <mat-label>Ordenar por</mat-label>
+          <mat-select [ngModel]="sortField" (ngModelChange)="onSortFieldChange($event)">
+            <mat-option value="id">No. Orden (ID)</mat-option>
+            <mat-option value="supplier">Proveedor</mat-option>
+            <mat-option value="totalAmount">Monto Total</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="w-40 mb-[-1.25em]">
+          <mat-label>Dirección</mat-label>
+          <mat-select [ngModel]="sortOrder" (ngModelChange)="onSortOrderChange($event)">
+            <mat-option value="DESC">Descendente</mat-option>
+            <mat-option value="ASC">Ascendente</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="w-48 mb-[-1.25em]">
+          <mat-label>Estado de Orden</mat-label>
+          <mat-select [(value)]="selectedStatus" (selectionChange)="onFilterChange()">
+            <mat-option value="ALL">Todos los estados</mat-option>
+            @for (st of statuses; track st.id) {
+              <mat-option [value]="st.id">{{ st.name }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="w-36 mb-[-1.25em]">
+          <mat-label>Por página</mat-label>
+          <mat-select [ngModel]="pageSize" (ngModelChange)="onPageSizeChange($event)">
+            <mat-option [value]="5">5 por página</mat-option>
+            <mat-option [value]="10">10 por página</mat-option>
+            <mat-option [value]="20">20 por página</mat-option>
+            <mat-option [value]="50">50 por página</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <span class="text-xs text-gray-500 font-medium">Página <strong>{{ currentPage }}</strong> de <strong>{{ totalPages }}</strong></span>
+        <div class="flex items-center gap-1">
+          <button mat-icon-button (click)="goToPage(1)" [disabled]="currentPage === 1" title="Primera página">
+            <mat-icon>first_page</mat-icon>
+          </button>
+          <button mat-icon-button (click)="goToPage(currentPage - 1)" [disabled]="currentPage === 1" title="Anterior">
+            <mat-icon>chevron_left</mat-icon>
+          </button>
+          @for (p of pagesArray; track p) {
+            <button mat-stroked-button (click)="goToPage(p)" [color]="p === currentPage ? 'primary' : ''" class="btn-page-num">
+              {{ p }}
+            </button>
+          }
+          <button mat-icon-button (click)="goToPage(currentPage + 1)" [disabled]="currentPage >= totalPages" title="Siguiente">
+            <mat-icon>chevron_right</mat-icon>
+          </button>
+          <button mat-icon-button (click)="goToPage(totalPages)" [disabled]="currentPage >= totalPages" title="Última página">
+            <mat-icon>last_page</mat-icon>
+          </button>
+        </div>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card class="table-card" appearance="outlined">
+    <mat-card-content>
+      @if (loading) {
+        <div class="loading-state">
+          <mat-spinner diameter="40"></mat-spinner>
+          <p>Cargando órdenes de compra...</p>
+        </div>
+      } @else if (filteredPurchases.length === 0) {
+        <div class="empty-state">
+          <mat-icon class="empty-icon">shopping_cart</mat-icon>
+          <h3 class="text-base font-bold text-gray-800">No se encontraron órdenes de compra</h3>
+          <p class="text-sm text-gray-500">No hay registros que coincidan con los criterios seleccionados.</p>
+          @if (searchTerm || selectedStatus !== 'ALL') {
+            <button mat-stroked-button color="primary" (click)="clearSearch(); selectedStatus = 'ALL'; onFilterChange()">
+              Restablecer filtros
+            </button>
+          } @else {
+            <button mat-flat-button color="primary" (click)="openCreateModal()">
+              <mat-icon>add_shopping_cart</mat-icon>
+              <span>Registrar Primera Compra</span>
+            </button>
+          }
+        </div>
+      } @else {
+        <div class="table-responsive">
+          <table class="users-table">
+            <thead>
+              <tr>
+                <th>No. Orden</th>
+                <th>Proveedor</th>
+                <th>Fecha</th>
+                <th>Subtotal</th>
+                <th>Total</th>
+                <th>Estado</th>
+                <th class="text-right">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (p of paginatedPurchases; track p.id) {
+                <tr>
+                  <td class="font-mono font-bold text-gray-900">#{{ p.id }}</td>
+                  <td class="font-medium text-main">
+                    <div class="entity-cell">
+                      <span class="entity-avatar">
+                        <mat-icon class="!text-base !w-4 !h-4 flex items-center justify-center">store</mat-icon>
+                      </span>
+                      <div class="flex flex-col">
+                        <span class="font-semibold text-gray-900">{{ p.supplier?.name }}</span>
+                        <span class="text-xs text-muted font-mono">NIT: {{ p.supplier?.taxNumber || '—' }}</span>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="text-muted">{{ formatDate(p.purchaseDate) }}</td>
+                  <td class="text-muted">{{ formatMoney(p.subtotal) }}</td>
+                  <td class="font-bold text-emerald-700">{{ formatMoney(p.totalAmount) }}</td>
+                  <td>
+                    <span class="status-badge" [class.status-active]="p.status?.name === 'RECEIVED' || p.status?.name === 'COMPLETED' || p.status?.name === 'APPROVED'" [class.status-pending]="p.status?.name === 'PENDING' || p.status?.name === 'ORDERED'" [class.status-warn]="p.status?.name === 'CANCELLED'">
+                      <span class="status-dot"></span> {{ p.status?.name || 'Completado' }}
+                    </span>
+                  </td>
+                  <td class="text-right">
+                    <div class="actions-group">
+                      <button mat-icon-button (click)="openDetailModal(p)" title="Ver Detalle">
+                        <mat-icon>visibility</mat-icon>
+                      </button>
+                      <button mat-icon-button (click)="openStatusModal(p)" title="Cambiar Estado">
+                        <mat-icon>published_with_changes</mat-icon>
+                      </button>
+                      <button mat-icon-button color="warn" (click)="cancelPurchase(p)" title="Cancelar Compra">
+                        <mat-icon>cancel</mat-icon>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </mat-card-content>
+  </mat-card>
+
+
+  @if (isDetailModalOpen && selectedPurchase) {
+    <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" (click)="closeDetailModal()">
+      <div class="bg-white rounded-xl shadow-2xl w-full max-w-xl overflow-hidden flex flex-col" (click)="$event.stopPropagation()">
+        <div class="p-4 border-b border-gray-100 flex justify-between items-center">
+          <h2 class="text-base font-bold text-gray-900">Detalle de Orden de Compra #{{ selectedPurchase.id }}</h2>
+          <button mat-icon-button (click)="closeDetailModal()"><mat-icon>close</mat-icon></button>
+        </div>
+        <div class="p-6 flex flex-col gap-4">
+          <div class="flex justify-between border-b pb-2 text-sm">
+            <span class="text-gray-500">Proveedor:</span>
+            <strong>{{ selectedPurchase.supplier?.name }}</strong>
+          </div>
+          <div class="flex justify-between border-b pb-2 text-sm">
+            <span class="text-gray-500">Fecha:</span>
+            <span>{{ formatDate(selectedPurchase.purchaseDate) }}</span>
+          </div>
+          <div class="flex justify-between border-b pb-2 text-sm">
+            <span class="text-gray-500">Estado:</span>
+            <mat-chip class="text-xs">{{ selectedPurchase.status?.name }}</mat-chip>
+          </div>
+
+          <h4 class="text-xs font-bold uppercase text-gray-600 mt-2">Productos Comprados</h4>
+          <table class="w-full text-left border-collapse text-sm">
+            <thead>
+              <tr class="bg-gray-100 text-gray-600 text-xs">
+                <th class="p-2">Producto</th>
+                <th class="p-2">Cant.</th>
+                <th class="p-2">Costo U.</th>
+                <th class="p-2 text-right">Subtotal</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+              @for (item of selectedPurchaseItems; track item.id) {
+                <tr>
+                  <td class="p-2">{{ item.product?.name }}</td>
+                  <td class="p-2">{{ item.quantity }}</td>
+                  <td class="p-2">{{ formatMoney(item.unitCost) }}</td>
+                  <td class="p-2 text-right font-bold">{{ formatMoney(item.subtotal) }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+
+          <div class="flex justify-end pt-2 font-bold text-base text-emerald-800">
+            Total General: {{ formatMoney(selectedPurchase.totalAmount) }}
+          </div>
+        </div>
+        <div class="p-4 border-t border-gray-100 flex justify-end">
+          <button mat-flat-button color="primary" (click)="closeDetailModal()">Cerrar</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  @if (isStatusModalOpen && selectedPurchase) {
+    <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" (click)="closeStatusModal()">
+      <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm overflow-hidden flex flex-col" (click)="$event.stopPropagation()">
+        <div class="p-4 border-b border-gray-100 flex justify-between items-center">
+          <h2 class="text-base font-bold text-gray-900">Cambiar Estado de Compra #{{ selectedPurchase.id }}</h2>
+          <button mat-icon-button (click)="closeStatusModal()"><mat-icon>close</mat-icon></button>
+        </div>
+        <div class="p-6 flex flex-col gap-4">
+          <mat-form-field appearance="outline" class="w-full">
+            <mat-label>Nuevo Estado</mat-label>
+            <mat-select [(value)]="newStatusIdToApply">
+              @for (st of statuses; track st.id) {
+                <mat-option [value]="st.id">{{ st.name }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+          <div class="flex justify-end gap-2 pt-2 border-t border-gray-100">
+            <button mat-stroked-button (click)="closeStatusModal()">Cancelar</button>
+            <button mat-flat-button color="primary" (click)="applyStatusChange()">Actualizar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+</div>

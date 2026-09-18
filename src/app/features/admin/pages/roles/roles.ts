@@ -1,13 +1,30 @@
 import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { MatCardModule } from '@angular/material/card';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatChipsModule } from '@angular/material/chips';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { RoleService } from '../../../../core/services/role';
 import { RoleResponse } from '../../../../core/models/role';
 
 @Component({
   selector: 'app-roles',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    MatCardModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatButtonModule,
+    MatIconModule,
+    MatChipsModule,
+    MatProgressSpinnerModule
+  ],
   templateUrl: './roles.html',
   styleUrl: './roles.css'
 })
@@ -84,21 +101,6 @@ export class Roles implements OnInit {
         return 'badge-sales';
       default:
         return 'badge-default';
-    }
-  }
-
-  getRoleScopeDescription(roleName?: string): string {
-    switch (roleName) {
-      case 'ADMINISTRATION':
-        return 'Gestión completa de usuarios, visualización de roles, auditoría y catálogos maestros.';
-      case 'PURCHASING':
-        return 'Gestión integral de órdenes de compra, proveedores y recepción de mercancía.';
-      case 'INVENTORY':
-        return 'Control de existencias en almacén, movimientos, lotes y niveles mínimos de stock.';
-      case 'SALES':
-        return 'Gestión comercial de ventas, facturación, registro de pagos y cartera de clientes.';
-      default:
-        return 'Acceso configurado según las políticas de seguridad del sistema.';
     }
   }
 }

@@ -1,6 +1,11 @@
 import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { MatCardModule } from '@angular/material/card';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatChipsModule } from '@angular/material/chips';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { SessionService } from '../../../core/services/session';
 import { PurchaseService } from '../../../core/services/purchase';
 import { SupplierService } from '../../../core/services/supplier';
@@ -12,7 +17,15 @@ import { InventoryResponse } from '../../../core/models/inventory';
 @Component({
   selector: 'app-purchasing-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [
+    CommonModule,
+    RouterLink,
+    MatCardModule,
+    MatButtonModule,
+    MatIconModule,
+    MatChipsModule,
+    MatProgressSpinnerModule
+  ],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.css',
 })
@@ -46,14 +59,12 @@ export class Dashboard implements OnInit {
     this.loadingRecent = true;
     this.loadingAlerts = true;
 
-    // Cargar compras recientes y total
     this.purchaseService.getPurchases(0, 5, 'purchaseDate', 'DESC').subscribe({
       next: (res) => {
         if (res?.data) {
           this.totalPurchases = res.data.totalElements ?? 0;
           this.recentPurchases = res.data.content || [];
 
-          // Calcular monto representativo acumulado
           const sum = this.recentPurchases.reduce((acc, p) => acc + (Number(p.totalAmount) || 0), 0);
           this.totalSpending = sum;
         }
@@ -66,7 +77,6 @@ export class Dashboard implements OnInit {
       }
     });
 
-    // Cargar total de proveedores registrados
     this.supplierService.getSuppliers(0, 1, 'createdAt', 'DESC', false).subscribe({
       next: (res) => {
         if (res?.data) {
@@ -79,7 +89,6 @@ export class Dashboard implements OnInit {
       }
     });
 
-    // Cargar alertas de stock bajo que requieren compra
     this.inventoryService.getLowStock(0, 5, 'quantityOnHand', 'ASC').subscribe({
       next: (res) => {
         if (res?.data) {
@@ -129,23 +138,6 @@ export class Dashboard implements OnInit {
         return 'badge-cancelada';
       default:
         return 'badge-default';
-    }
-  }
-
-  getStatusLabel(statusName?: string): string {
-    switch (statusName) {
-      case 'RECIBIDA':
-        return 'Recibida en bodega';
-      case 'APROBADA':
-        return 'Aprobada';
-      case 'EN_TRANSITO':
-        return 'En tránsito';
-      case 'SOLICITADA':
-        return 'Solicitada';
-      case 'CANCELADA':
-        return 'Cancelada';
-      default:
-        return statusName || 'Desconocido';
     }
   }
 

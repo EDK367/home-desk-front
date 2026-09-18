@@ -1,0 +1,42 @@
+.stock-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  width: 100%;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.page-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #1a2e23;
+  margin: 0;
+}
+
+.page-subtitle {
+  font-size: 0.95rem;
+  color: #6b7c74;
+  margin: 0.25rem 0 0 0;
+}
+
+.toolbar-card, .controls-top-card, .table-card {
+  border-color: #d0ddd6;
+  background-color: #ffffff;
+}
+
+.responsive-table-container {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.users-table {
+  width: 100%;
+  min-width: 800px;
+}

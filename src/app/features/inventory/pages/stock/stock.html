@@ -1,0 +1,412 @@
+<div class="stock-container">
+  <header class="page-header">
+    <div class="header-titles">
+      <h1 class="page-title">Control de Existencias</h1>
+    </div>
+    <div class="header-actions">
+      <button mat-flat-button color="primary" (click)="openAdjustModal()">
+        <mat-icon>tune</mat-icon>
+        <span>Nuevo Ajuste Manual</span>
+      </button>
+    </div>
+  </header>
+
+  <mat-card class="toolbar-card" appearance="outlined">
+    <mat-card-content class="p-4 flex justify-between items-center gap-4 flex-wrap">
+      <mat-form-field appearance="outline" class="flex-1 max-w-lg mb-[-1.25em]">
+        <mat-label>Buscar producto</mat-label>
+        <mat-icon matPrefix>search</mat-icon>
+        <input 
+          matInput
+          type="text" 
+          [(ngModel)]="searchTerm" 
+          (ngModelChange)="onSearchChange()" 
+          placeholder="Buscar por nombre, SKU o categoría..." 
+        />
+        @if (searchTerm) {
+          <button mat-icon-button matSuffix (click)="clearSearch()" title="Limpiar búsqueda">
+            <mat-icon>close</mat-icon>
+          </button>
+        }
+      </mat-form-field>
+
+      <div class="flex items-center gap-3">
+        <mat-chip class="results-badge">
+          Total: {{ totalElements }} {{ totalElements === 1 ? 'registro' : 'registros' }}
+        </mat-chip>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card class="controls-top-card" appearance="outlined">
+    <mat-card-content class="p-3 flex justify-between items-center gap-4 flex-wrap">
+      <div class="flex items-center gap-3 flex-wrap">
+        <mat-form-field appearance="outline" class="w-44 mb-[-1.25em]">
+          <mat-label>Ordenar por</mat-label>
+          <mat-select [ngModel]="sortField" (ngModelChange)="onSortFieldChange($event)">
+            <mat-option value="updatedAt">Última actualización</mat-option>
+            <mat-option value="quantityOnHand">Cantidad en existencia</mat-option>
+            <mat-option value="id">Folio de inventario</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="w-40 mb-[-1.25em]">
+          <mat-label>Dirección</mat-label>
+          <mat-select [ngModel]="sortOrder" (ngModelChange)="onSortOrderChange($event)">
+            <mat-option value="DESC">Descendente</mat-option>
+            <mat-option value="ASC">Ascendente</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="w-48 mb-[-1.25em]">
+          <mat-label>Categoría</mat-label>
+          <mat-select [ngModel]="selectedCategoryFilter" (ngModelChange)="onCategoryFilterChange($event)">
+            <mat-option value="ALL">Todas las categorías</mat-option>
+            @for (cat of categories; track cat.id) {
+              <mat-option [value]="cat.id != null ? cat.id.toString() : ''">{{ cat.name }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <button 
+          mat-stroked-button 
+          [color]="onlyLowStock ? 'warn' : ''" 
+          (click)="toggleLowStockFilter()"
+        >
+          <mat-icon>{{ onlyLowStock ? 'warning' : 'filter_list' }}</mat-icon>
+          <span>Solo Stock Bajo</span>
+        </button>
+
+        <mat-form-field appearance="outline" class="w-36 mb-[-1.25em]">
+          <mat-label>Por página</mat-label>
+          <mat-select [ngModel]="pageSize" (ngModelChange)="onPageSizeChange($event)">
+            <mat-option [value]="5">5 por página</mat-option>
+            <mat-option [value]="10">10 por página</mat-option>
+            <mat-option [value]="20">20 por página</mat-option>
+            <mat-option [value]="50">50 por página</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <span class="text-xs text-gray-500 font-medium">Página <strong>{{ currentPage }}</strong> de <strong>{{ totalPages }}</strong></span>
+        <div class="flex items-center gap-1">
+          <button mat-icon-button (click)="goToPage(1)" [disabled]="currentPage === 1" title="Primera página">
+            <mat-icon>first_page</mat-icon>
+          </button>
+          <button mat-icon-button (click)="goToPage(currentPage - 1)" [disabled]="currentPage === 1" title="Anterior">
+            <mat-icon>chevron_left</mat-icon>
+          </button>
+          @for (p of pagesArray; track p) {
+            <button mat-stroked-button (click)="goToPage(p)" [color]="p === currentPage ? 'primary' : ''" class="btn-page-num">
+              {{ p }}
+            </button>
+          }
+          <button mat-icon-button (click)="goToPage(currentPage + 1)" [disabled]="currentPage >= totalPages" title="Siguiente">
+            <mat-icon>chevron_right</mat-icon>
+          </button>
+          <button mat-icon-button (click)="goToPage(totalPages)" [disabled]="currentPage >= totalPages" title="Última página">
+            <mat-icon>last_page</mat-icon>
+          </button>
+        </div>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card class="table-card" appearance="outlined">
+    <mat-card-content>
+      @if (loading) {
+        <div class="loading-state">
+          <mat-spinner diameter="40"></mat-spinner>
+          <p>Cargando existencias de inventario...</p>
+        </div>
+      } @else if (filteredInventories.length === 0) {
+        <div class="empty-state">
+          <mat-icon class="empty-icon">warehouse</mat-icon>
+          <h3 class="text-base font-bold text-gray-800">No se encontraron registros de inventario</h3>
+          <p class="text-sm text-gray-500">No existen productos que coincidan con los filtros seleccionados.</p>
+          @if (searchTerm || selectedCategoryFilter !== 'ALL' || onlyLowStock) {
+            <button mat-stroked-button (click)="clearSearch(); selectedCategoryFilter = 'ALL'; onlyLowStock = false; loadStock()">
+              Restablecer filtros
+            </button>
+          }
+        </div>
+      } @else {
+        <div class="responsive-table-container">
+          <table class="users-table">
+            <thead>
+              <tr>
+                <th>Folio</th>
+                <th>Producto</th>
+                <th>Categoría</th>
+                <th class="text-center">Existencia Actual</th>
+                <th class="text-center">Stock Mínimo</th>
+                <th>Estado</th>
+                <th>Precio Venta</th>
+                <th>Último Movimiento</th>
+                <th class="text-right">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (inv of filteredInventories; track inv.id) {
+                <tr [class.bg-amber-50]="inv.isLowStock">
+                  <td class="font-mono font-bold text-gray-900">#{{ inv.id }}</td>
+                  <td>
+                    <div class="entity-cell">
+                      <div class="entity-avatar bg-emerald-100 text-emerald-800">
+                        {{ (inv.product?.name || 'P').charAt(0).toUpperCase() }}
+                      </div>
+                      <div>
+                        <div class="font-medium text-gray-900">{{ inv.product?.name || 'Producto' }}</div>
+                        <div class="text-xs text-gray-400 font-mono">SKU: {{ inv.product?.sku || '-' }}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800">
+                      {{ inv.product?.category?.name || 'General' }}
+                    </span>
+                  </td>
+                  <td class="text-center font-mono font-bold" [class.text-red-600]="(inv.quantityOnHand ?? 0) <= 0" [class.text-emerald-700]="(inv.quantityOnHand ?? 0) > 0">
+                    {{ inv.quantityOnHand ?? 0 }} {{ inv.product?.unitOfMeasure || 'UNIT' }}
+                  </td>
+                  <td class="text-center font-mono text-gray-600 font-medium">
+                    {{ inv.product?.minStockLevel ?? 0 }}
+                  </td>
+                  <td>
+                    @if ((inv.quantityOnHand ?? 0) <= 0) {
+                      <span class="status-badge status-inactive">
+                        <span class="status-dot"></span> Agotado
+                      </span>
+                    } @else if (inv.isLowStock) {
+                      <span class="status-badge status-warn">
+                        <span class="status-dot"></span> Bajo Stock
+                      </span>
+                    } @else {
+                      <span class="status-badge status-active">
+                        <span class="status-dot"></span> Óptimo
+                      </span>
+                    }
+                  </td>
+                  <td class="font-bold text-emerald-700 font-mono text-sm">
+                    {{ formatCurrency(inv.product?.salePrice) }}
+                  </td>
+                  <td class="text-sm text-gray-600">
+                    {{ formatDate(inv.updatedAt) }}
+                  </td>
+                  <td class="text-right">
+                    <div class="actions-group">
+                      <button mat-stroked-button color="primary" (click)="openAdjustModal(inv.product?.id)" title="Ajuste manual de existencias">
+                        <mat-icon>tune</mat-icon>
+                        <span>Ajustar</span>
+                      </button>
+                      <button mat-icon-button (click)="openLotsModal(inv)" title="Ver lotes activos">
+                        <mat-icon>all_inbox</mat-icon>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </mat-card-content>
+  </mat-card>
+
+  @if (isAdjustModalOpen) {
+    <div class="modal-backdrop" (click)="closeAdjustModal()">
+      <mat-card class="modal-card modal-medium" (click)="$event.stopPropagation()">
+        <header class="modal-header">
+          <div class="modal-title-group">
+            <div class="modal-icon-badge">
+              <mat-icon>tune</mat-icon>
+            </div>
+            <div>
+              <h2 class="modal-title">Ajuste Manual de Existencias</h2>
+              <p class="modal-subtitle">Registra correcciones por inventario físico, mermas o devoluciones.</p>
+            </div>
+          </div>
+
+          <button mat-icon-button (click)="closeAdjustModal()" title="Cerrar modal">
+            <mat-icon>close</mat-icon>
+          </button>
+        </header>
+
+        <form [formGroup]="adjustForm" (ngSubmit)="saveAdjustment()" class="modal-body">
+          @if (modalError) {
+            <div class="modal-error-banner">
+              <mat-icon color="warn">error</mat-icon>
+              <span>{{ modalError }}</span>
+            </div>
+          }
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Producto a Ajustar *</mat-label>
+            <mat-select formControlName="productId" (ngModelChange)="onProductChanged()">
+              <mat-option [value]="null" disabled>Seleccione producto...</mat-option>
+              @for (prod of products; track prod.id) {
+                <mat-option [value]="prod.id">{{ prod.name }} (SKU: {{ prod.sku }})</mat-option>
+              }
+            </mat-select>
+            @if (adjustForm.get('productId')?.invalid && adjustForm.get('productId')?.touched) {
+              <mat-error>Debe seleccionar un producto.</mat-error>
+            }
+          </mat-form-field>
+
+          @if (selectedInventory) {
+            <div class="product-preview-card">
+              <div class="preview-item">
+                <span class="preview-label">Existencia Actual:</span>
+                <strong class="preview-val font-bold">{{ selectedInventory.quantityOnHand ?? 0 }} unidades</strong>
+              </div>
+              <div class="preview-item">
+                <span class="preview-label">Stock Mínimo:</span>
+                <span class="preview-val">{{ selectedInventory.product?.minStockLevel ?? 0 }} unidades</span>
+              </div>
+              <div class="preview-item">
+                <span class="preview-label">Proyección Después:</span>
+                <strong class="preview-val text-main font-bold" [class.text-warn]="projectedBalance < 0">
+                  {{ projectedBalance }} unidades
+                </strong>
+              </div>
+            </div>
+          }
+
+          <div class="form-row-group">
+            <div class="radio-section">
+              <label class="section-radio-label">Tipo de Ajuste *</label>
+              <mat-radio-group formControlName="adjustmentType" class="adjustment-radio-group">
+                <mat-radio-button value="ENTRADA" color="primary">Entrada (+) Ingreso</mat-radio-button>
+                <mat-radio-button value="SALIDA" color="warn">Salida (-) Egreso</mat-radio-button>
+              </mat-radio-group>
+            </div>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Cantidad a Ajustar *</mat-label>
+              <input matInput type="number" formControlName="quantity" min="1" step="1" placeholder="1" />
+              @if (adjustForm.get('quantity')?.invalid && adjustForm.get('quantity')?.touched) {
+                <mat-error>La cantidad debe ser mayor a 0.</mat-error>
+              }
+            </mat-form-field>
+          </div>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Motivo / Observaciones del Ajuste *</mat-label>
+            <textarea matInput formControlName="notes" rows="3" placeholder="Ej. Conteo físico trimestral, ajuste por merma o rotura..." maxlength="255"></textarea>
+            @if (adjustForm.get('notes')?.invalid && adjustForm.get('notes')?.touched) {
+              <mat-error>Debe indicar el motivo del ajuste.</mat-error>
+            }
+          </mat-form-field>
+
+          <footer class="modal-footer">
+            <button type="button" mat-button (click)="closeAdjustModal()" [disabled]="savingAdjustment">
+              Cancelar
+            </button>
+            <button type="submit" mat-flat-button color="primary" [disabled]="savingAdjustment || adjustForm.invalid || projectedBalance < 0">
+              @if (savingAdjustment) {
+                <mat-spinner diameter="18"></mat-spinner>
+                <span>Aplicando...</span>
+              } @else {
+                <span>Confirmar Ajuste</span>
+              }
+            </button>
+          </footer>
+        </form>
+      </mat-card>
+    </div>
+  }
+
+  @if (isLotsModalOpen && selectedInventory) {
+    <div class="modal-backdrop" (click)="closeLotsModal()">
+      <mat-card class="modal-card modal-large" (click)="$event.stopPropagation()">
+        <header class="modal-header">
+          <div class="modal-title-group">
+            <div class="modal-icon-badge">
+              <mat-icon>all_inbox</mat-icon>
+            </div>
+            <div>
+              <h2 class="modal-title">Lotes Activos: {{ selectedInventory.product?.name }}</h2>
+              <p class="modal-subtitle">SKU: {{ selectedInventory.product?.sku }} | Existencia total en bodega: {{ selectedInventory.quantityOnHand }} unidades</p>
+            </div>
+          </div>
+
+          <button mat-icon-button (click)="closeLotsModal()" title="Cerrar modal">
+            <mat-icon>close</mat-icon>
+          </button>
+        </header>
+
+        <div class="modal-body">
+          @if (loadingLots) {
+            <div class="loading-state">
+              <mat-spinner diameter="32"></mat-spinner>
+              <p>Consultando lotes disponibles...</p>
+            </div>
+          } @else if (activeLots.length === 0) {
+            <div class="empty-state">
+              <p>No se registran lotes activos con saldo para este producto.</p>
+            </div>
+          } @else {
+            <div class="table-responsive">
+              <table class="compact-table">
+                <thead>
+                  <tr>
+                    <th>Lote ID</th>
+                    <th>Orden Compra</th>
+                    <th>Fecha Ingreso</th>
+                    <th class="text-center">Recibido</th>
+                    <th class="text-center">Remanente</th>
+                    <th class="text-right">Costo Unitario</th>
+                    <th class="text-right">Valor en Inventario</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (lot of activeLots; track lot.id) {
+                    <tr>
+                      <td class="font-mono font-medium text-main">#LOT-{{ lot.id }}</td>
+                      <td>
+                        @if (lot.purchaseId) {
+                          <span class="font-mono text-muted">Compra #{{ lot.purchaseId }}</span>
+                        } @else {
+                          <span class="text-muted">Ajuste Inicial</span>
+                        }
+                      </td>
+                      <td class="text-muted">{{ formatDate(lot.receivedAt) }}</td>
+                      <td class="text-center font-semibold">{{ lot.quantityReceived }}</td>
+                      <td class="text-center font-bold text-main">{{ lot.quantityRemaining }}</td>
+                      <td class="text-right font-mono">{{ formatCurrency(lot.unitCost) }}</td>
+                      <td class="text-right font-bold text-main">
+                        {{ formatCurrency((lot.quantityRemaining ?? 0) * (lot.unitCost ?? 0)) }}
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        </div>
+
+        <footer class="modal-footer">
+          <button mat-button (click)="closeLotsModal()">
+            Cerrar
+          </button>
+        </footer>
+      </mat-card>
+    </div>
+  }
+
+  @if (toast?.show) {
+    <div class="toast-container" [ngClass]="toast?.type">
+      <div class="toast-icon">
+        <mat-icon>{{ toast?.type === 'success' ? 'check_circle' : 'error' }}</mat-icon>
+      </div>
+      <div class="toast-content">
+        <h4 class="toast-title">{{ toast?.title }}</h4>
+        <p class="toast-message">{{ toast?.message }}</p>
+      </div>
+      <button mat-icon-button (click)="closeToast()" title="Cerrar notificación">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+  }
+</div>

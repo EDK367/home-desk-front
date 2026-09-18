@@ -1,0 +1,368 @@
+<div class="p-6 w-full flex flex-col gap-6">
+  @if (toast) {
+    <div class="fixed top-6 right-6 z-50 flex items-center gap-3 p-4 bg-white rounded-lg shadow-lg border-l-4" [class.border-emerald-600]="toast.type === 'success'" [class.border-red-600]="toast.type === 'error'">
+      <mat-icon [class.text-emerald-600]="toast.type === 'success'" [class.text-red-600]="toast.type === 'error'">
+        {{ toast.type === 'success' ? 'check_circle' : 'error' }}
+      </mat-icon>
+      <div class="flex flex-col text-sm">
+        <strong class="font-semibold text-gray-900">{{ toast.title }}</strong>
+        <span class="text-gray-600">{{ toast.message }}</span>
+      </div>
+      <button mat-icon-button (click)="closeToast()"><mat-icon>close</mat-icon></button>
+    </div>
+  }
+
+  <header class="flex justify-between items-center flex-wrap gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900">Gestión de Proveedores</h1>
+    </div>
+    <div class="flex gap-3">
+      <button mat-flat-button color="primary" (click)="openCreateModal()">
+        <mat-icon>domain_add</mat-icon>
+        <span>Nuevo Proveedor</span>
+      </button>
+    </div>
+  </header>
+
+  <mat-card class="toolbar-card" appearance="outlined">
+    <mat-card-content class="p-4 flex justify-between items-center gap-4 flex-wrap">
+      <mat-form-field appearance="outline" class="flex-1 max-w-lg mb-[-1.25em]">
+        <mat-label>Buscar proveedores</mat-label>
+        <mat-icon matPrefix>search</mat-icon>
+        <input matInput type="text" [(ngModel)]="searchTerm" (ngModelChange)="onSearchChange()" placeholder="Buscar por razón social, NIT, contacto o correo...">
+        @if (searchTerm) {
+          <button mat-icon-button matSuffix (click)="clearSearch()" title="Limpiar búsqueda">
+            <mat-icon>close</mat-icon>
+          </button>
+        }
+      </mat-form-field>
+
+      <div class="flex items-center gap-3">
+        <mat-chip class="results-badge">
+          Total: {{ totalElements }} {{ totalElements === 1 ? 'registro' : 'registros' }}
+        </mat-chip>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card class="controls-top-card" appearance="outlined">
+    <mat-card-content class="p-3 flex justify-between items-center gap-4 flex-wrap">
+      <div class="flex items-center gap-3 flex-wrap">
+        <mat-form-field appearance="outline" class="w-44 mb-[-1.25em]">
+          <mat-label>Ordenar por</mat-label>
+          <mat-select [ngModel]="sortField" (ngModelChange)="onSortFieldChange($event)">
+            <mat-option value="name">Razón Social</mat-option>
+            <mat-option value="taxNumber">NIT</mat-option>
+            <mat-option value="id">ID</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="w-40 mb-[-1.25em]">
+          <mat-label>Dirección</mat-label>
+          <mat-select [ngModel]="sortOrder" (ngModelChange)="onSortOrderChange($event)">
+            <mat-option value="ASC">Ascendente</mat-option>
+            <mat-option value="DESC">Descendente</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="w-36 mb-[-1.25em]">
+          <mat-label>Por página</mat-label>
+          <mat-select [ngModel]="pageSize" (ngModelChange)="onPageSizeChange($event)">
+            <mat-option [value]="5">5 por página</mat-option>
+            <mat-option [value]="10">10 por página</mat-option>
+            <mat-option [value]="20">20 por página</mat-option>
+            <mat-option [value]="50">50 por página</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <span class="text-xs text-gray-500 font-medium">Página <strong>{{ currentPage }}</strong> de <strong>{{ totalPages }}</strong></span>
+        <div class="flex items-center gap-1">
+          <button mat-icon-button (click)="goToPage(1)" [disabled]="currentPage === 1" title="Primera página">
+            <mat-icon>first_page</mat-icon>
+          </button>
+          <button mat-icon-button (click)="goToPage(currentPage - 1)" [disabled]="currentPage === 1" title="Anterior">
+            <mat-icon>chevron_left</mat-icon>
+          </button>
+          @for (p of pagesArray; track p) {
+            <button mat-stroked-button (click)="goToPage(p)" [color]="p === currentPage ? 'primary' : ''" class="btn-page-num">
+              {{ p }}
+            </button>
+          }
+          <button mat-icon-button (click)="goToPage(currentPage + 1)" [disabled]="currentPage >= totalPages" title="Siguiente">
+            <mat-icon>chevron_right</mat-icon>
+          </button>
+          <button mat-icon-button (click)="goToPage(totalPages)" [disabled]="currentPage >= totalPages" title="Última página">
+            <mat-icon>last_page</mat-icon>
+          </button>
+        </div>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card class="table-card" appearance="outlined">
+    <mat-card-content>
+      @if (loading) {
+        <div class="loading-state">
+          <mat-spinner diameter="40"></mat-spinner>
+          <p>Cargando proveedores...</p>
+        </div>
+      } @else if (filteredSuppliers.length === 0) {
+        <div class="empty-state">
+          <mat-icon class="empty-icon">local_shipping</mat-icon>
+          <h3 class="text-base font-bold text-gray-800">No se encontraron proveedores</h3>
+          <p class="text-sm text-gray-500">No hay registros que coincidan con los criterios seleccionados.</p>
+          @if (searchTerm) {
+            <button mat-stroked-button color="primary" (click)="clearSearch()">Limpiar filtro</button>
+          } @else {
+            <button mat-flat-button color="primary" (click)="openCreateModal()">
+              <mat-icon>domain_add</mat-icon>
+              <span>Registrar Primer Proveedor</span>
+            </button>
+          }
+        </div>
+      } @else {
+        <div class="table-responsive">
+          <table class="users-table">
+            <thead>
+              <tr>
+                <th>Proveedor</th>
+                <th>NIT</th>
+                <th>Contacto</th>
+                <th>Teléfono</th>
+                <th>Correo</th>
+                <th>Estado</th>
+                <th class="text-right">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (s of paginatedSuppliers; track s.id) {
+                <tr [class.inactive-row]="s.isActive === false">
+                  <td class="font-medium text-main">
+                    <div class="entity-cell">
+                      <span class="entity-avatar">
+                        <mat-icon class="!text-base !w-4 !h-4 flex items-center justify-center">local_shipping</mat-icon>
+                      </span>
+                      <span class="font-semibold text-gray-900">{{ s.name }}</span>
+                    </div>
+                  </td>
+                  <td class="font-mono text-muted">{{ s.taxNumber }}</td>
+                  <td>{{ s.contactName }}</td>
+                  <td class="text-muted">
+                    {{ (s.phones && s.phones.length > 0) ? s.phones[0].phone : '—' }}
+                  </td>
+                  <td class="text-muted">{{ s.email }}</td>
+                  <td>
+                    @if (s.isActive !== false) {
+                      <span class="status-badge status-active">
+                        <span class="status-dot"></span> Activo
+                      </span>
+                    } @else {
+                      <span class="status-badge status-inactive">
+                        <span class="status-dot"></span> Inactivo
+                      </span>
+                    }
+                  </td>
+                  <td class="text-right">
+                    <div class="actions-group">
+                      <button mat-icon-button color="primary" (click)="openProductsModal(s)" title="Productos Suministrados">
+                        <mat-icon>inventory_2</mat-icon>
+                      </button>
+                      <button mat-icon-button (click)="openEditModal(s)" title="Editar Información">
+                        <mat-icon>edit</mat-icon>
+                      </button>
+                      <button mat-icon-button color="warn" (click)="deleteSupplier(s)" title="Desactivar">
+                        <mat-icon>delete</mat-icon>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </mat-card-content>
+  </mat-card>
+
+  @if (isModalOpen) {
+    <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" (click)="closeModal()">
+      <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col" (click)="$event.stopPropagation()">
+        <div class="p-4 border-b border-gray-100 flex justify-between items-center">
+          <div class="flex items-center gap-2">
+            <mat-icon color="primary">{{ isEditMode ? 'edit' : 'domain_add' }}</mat-icon>
+            <h2 class="text-base font-bold text-gray-900">{{ isEditMode ? 'Editar Proveedor' : 'Nuevo Proveedor' }}</h2>
+          </div>
+          <button mat-icon-button (click)="closeModal()"><mat-icon>close</mat-icon></button>
+        </div>
+
+        @if (modalError) {
+          <div class="p-3 bg-red-100 text-red-800 text-xs flex items-center gap-2">
+            <mat-icon>error_outline</mat-icon>
+            <span>{{ modalError }}</span>
+          </div>
+        }
+
+        <form [formGroup]="supplierForm" (ngSubmit)="saveSupplier()" class="p-6 flex flex-col gap-4">
+          <mat-form-field appearance="outline" class="w-full">
+            <mat-label>Razón Social / Nombre Comercial *</mat-label>
+            <input matInput formControlName="name" placeholder="Ej: Distribuidora Maderera Central S.A.">
+          </mat-form-field>
+
+          <div class="grid grid-cols-2 gap-4">
+            <mat-form-field appearance="outline" class="w-full">
+              <mat-label>NIT *</mat-label>
+              <input matInput formControlName="taxNumber" placeholder="Ej: 8945612-3">
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="w-full">
+              <mat-label>Contacto Principal *</mat-label>
+              <input matInput formControlName="contactName" placeholder="Ej: Lic. Carlos Fuentes">
+            </mat-form-field>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <mat-form-field appearance="outline" class="w-full">
+              <mat-label>Teléfono *</mat-label>
+              <input matInput formControlName="phone" placeholder="Ej: 2333-4455">
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="w-full">
+              <mat-label>Correo Electrónico *</mat-label>
+              <input matInput type="email" formControlName="email" placeholder="ventas@proveedor.com">
+            </mat-form-field>
+          </div>
+
+          <mat-form-field appearance="outline" class="w-full">
+            <mat-label>Dirección Fiscal *</mat-label>
+            <textarea matInput rows="2" formControlName="address" placeholder="Ej: Km 14.5 Carretera a El Salvador"></textarea>
+          </mat-form-field>
+
+          <div class="flex justify-end gap-2 pt-2 border-t border-gray-100">
+            <button mat-stroked-button type="button" (click)="closeModal()" [disabled]="saving">Cancelar</button>
+            <button mat-flat-button color="primary" type="submit" [disabled]="saving || supplierForm.invalid">
+              <span>{{ isEditMode ? 'Guardar Cambios' : 'Registrar Proveedor' }}</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+
+  @if (isProductsModalOpen && selectedSupplier) {
+    <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" (click)="closeProductsModal()">
+      <div class="bg-white rounded-xl shadow-2xl w-full max-w-3xl overflow-hidden flex flex-col" (click)="$event.stopPropagation()">
+        <div class="p-4 border-b border-gray-100 flex justify-between items-center">
+          <div class="flex items-center gap-2">
+            <mat-icon color="primary">inventory_2</mat-icon>
+            <div>
+              <h2 class="text-base font-bold text-gray-900">Productos Suministrados - {{ selectedSupplier.name }}</h2>
+              <p class="text-xs text-gray-500">NIT: {{ selectedSupplier.taxNumber }}</p>
+            </div>
+          </div>
+          <button mat-icon-button (click)="closeProductsModal()"><mat-icon>close</mat-icon></button>
+        </div>
+
+        <div class="p-6 flex flex-col gap-6 max-h-[75vh] overflow-y-auto">
+          <form [formGroup]="linkProductForm" (ngSubmit)="linkProduct()" class="p-4 bg-gray-50 rounded-lg border border-gray-200 flex flex-col gap-3">
+            <h4 class="text-xs font-semibold uppercase text-gray-600">Vincular Nuevo Producto al Proveedor</h4>
+            <div class="grid grid-cols-3 gap-3">
+              <mat-form-field appearance="outline" class="w-full">
+                <mat-label>Seleccionar Producto *</mat-label>
+                <mat-select formControlName="productId">
+                  @for (p of availableProducts; track p.id) {
+                    <mat-option [value]="p.id">{{ p.name }} ({{ p.sku }})</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="w-full">
+                <mat-label>SKU del Proveedor</mat-label>
+                <input matInput formControlName="supplierSku" placeholder="Ej: PROV-SKU-99">
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="w-full">
+                <mat-label>Costo de Compra (Q) *</mat-label>
+                <input matInput type="number" formControlName="cost" min="0" step="0.01">
+              </mat-form-field>
+            </div>
+            <div class="flex justify-end">
+              <button mat-flat-button color="primary" type="submit" [disabled]="savingProduct || linkProductForm.invalid">
+                <mat-icon>add</mat-icon>
+                <span>Asociar al Proveedor</span>
+              </button>
+            </div>
+          </form>
+
+          <div>
+            <h4 class="text-sm font-bold text-gray-800 mb-3">Productos Actuales ({{ supplierProducts.length }})</h4>
+            @if (supplierProducts.length === 0) {
+              <p class="text-sm text-gray-500 italic">No hay productos asociados a este proveedor todavía.</p>
+            } @else {
+              <table class="w-full text-left border-collapse text-sm">
+                <thead>
+                  <tr class="bg-gray-100 text-gray-600 text-xs font-semibold">
+                    <th class="p-2">Producto</th>
+                    <th class="p-2">SKU Local</th>
+                    <th class="p-2">SKU Proveedor</th>
+                    <th class="p-2">Costo Pactado</th>
+                    <th class="p-2 text-right">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                  @for (sp of supplierProducts; track sp.id) {
+                    <tr class="hover:bg-gray-50">
+                      <td class="p-2 font-semibold text-gray-900">{{ sp.product?.name }}</td>
+                      <td class="p-2 font-mono text-gray-600">{{ sp.product?.sku }}</td>
+                      <td class="p-2 font-mono text-gray-600">{{ sp.supplierSku || '—' }}</td>
+                      <td class="p-2 font-semibold text-emerald-700">{{ formatMoney(sp.cost) }}</td>
+                      <td class="p-2 text-right">
+                        <button mat-icon-button (click)="openEditProductModal(sp)" title="Modificar Costo/SKU">
+                          <mat-icon>edit</mat-icon>
+                        </button>
+                        <button mat-icon-button color="warn" (click)="unlinkProduct(sp)" title="Desvincular">
+                          <mat-icon>link_off</mat-icon>
+                        </button>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            }
+          </div>
+        </div>
+
+        <div class="p-4 border-t border-gray-100 flex justify-end">
+          <button mat-stroked-button (click)="closeProductsModal()">Cerrar</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  @if (isEditProductModalOpen && selectedSupplierProduct) {
+    <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" (click)="closeEditProductModal()">
+      <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm overflow-hidden flex flex-col" (click)="$event.stopPropagation()">
+        <div class="p-4 border-b border-gray-100 flex justify-between items-center">
+          <h2 class="text-base font-bold text-gray-900">Editar Costo / SKU de Proveedor</h2>
+          <button mat-icon-button (click)="closeEditProductModal()"><mat-icon>close</mat-icon></button>
+        </div>
+        <form [formGroup]="editProductForm" (ngSubmit)="saveEditProduct()" class="p-6 flex flex-col gap-4">
+          <p class="text-sm font-semibold text-gray-800">{{ selectedSupplierProduct.product?.name }}</p>
+          <mat-form-field appearance="outline" class="w-full">
+            <mat-label>SKU del Proveedor</mat-label>
+            <input matInput formControlName="supplierSku">
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="w-full">
+            <mat-label>Costo de Adquisición (Q) *</mat-label>
+            <input matInput type="number" formControlName="cost" min="0" step="0.01">
+          </mat-form-field>
+          <div class="flex justify-end gap-2 pt-2 border-t border-gray-100">
+            <button mat-stroked-button type="button" (click)="closeEditProductModal()">Cancelar</button>
+            <button mat-flat-button color="primary" type="submit" [disabled]="editProductForm.invalid">Guardar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+</div>

@@ -1,0 +1,223 @@
+<div class="p-6 w-full flex flex-col gap-6">
+  @if (toast) {
+    <div class="fixed top-6 right-6 z-50 flex items-center gap-3 p-4 bg-white rounded-lg shadow-lg border-l-4" [class.border-emerald-600]="toast.type === 'success'" [class.border-red-600]="toast.type === 'error'">
+      <mat-icon [class.text-emerald-600]="toast.type === 'success'" [class.text-red-600]="toast.type === 'error'">
+        {{ toast.type === 'success' ? 'check_circle' : 'error' }}
+      </mat-icon>
+      <div class="flex flex-col text-sm">
+        <strong class="font-semibold text-gray-900">{{ toast.title }}</strong>
+        <span class="text-gray-600">{{ toast.message }}</span>
+      </div>
+      <button mat-icon-button (click)="closeToast()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+  }
+
+  <header class="flex justify-between items-center flex-wrap gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900">Categorías de Productos</h1>
+    </div>
+    <div class="flex gap-3">
+      <button mat-flat-button color="primary" (click)="openCreateModal()">
+        <mat-icon>add</mat-icon>
+        <span>Nueva Categoría</span>
+      </button>
+    </div>
+  </header>
+
+  <mat-card class="toolbar-card" appearance="outlined">
+    <mat-card-content class="p-4 flex justify-between items-center gap-4 flex-wrap">
+      <mat-form-field appearance="outline" class="flex-1 max-w-lg mb-[-1.25em]">
+        <mat-label>Buscar categorías</mat-label>
+        <mat-icon matPrefix>search</mat-icon>
+        <input matInput type="text" [(ngModel)]="searchTerm" (ngModelChange)="onSearchChange()" placeholder="Buscar por nombre">
+        @if (searchTerm) {
+          <button mat-icon-button matSuffix (click)="clearSearch()" title="Limpiar búsqueda">
+            <mat-icon>close</mat-icon>
+          </button>
+        }
+      </mat-form-field>
+
+      <div class="flex items-center gap-3">
+        <mat-chip class="results-badge">
+          Total: {{ totalElements }} {{ totalElements === 1 ? 'registro' : 'registros' }}
+        </mat-chip>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card class="controls-top-card" appearance="outlined">
+    <mat-card-content class="p-3 flex justify-between items-center gap-4 flex-wrap">
+      <div class="flex items-center gap-3 flex-wrap">
+        <mat-form-field appearance="outline" class="w-44 mb-[-1.25em]">
+          <mat-label>Ordenar por</mat-label>
+          <mat-select [ngModel]="sortField" (ngModelChange)="onSortFieldChange($event)">
+            <mat-option value="name">Nombre</mat-option>
+            <mat-option value="id">ID</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="w-40 mb-[-1.25em]">
+          <mat-label>Dirección</mat-label>
+          <mat-select [ngModel]="sortOrder" (ngModelChange)="onSortOrderChange($event)">
+            <mat-option value="ASC">Ascendente</mat-option>
+            <mat-option value="DESC">Descendente</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="w-36 mb-[-1.25em]">
+          <mat-label>Por página</mat-label>
+          <mat-select [ngModel]="pageSize" (ngModelChange)="onPageSizeChange($event)">
+            <mat-option [value]="5">5 por página</mat-option>
+            <mat-option [value]="10">10 por página</mat-option>
+            <mat-option [value]="20">20 por página</mat-option>
+            <mat-option [value]="50">50 por página</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <span class="text-xs text-gray-500 font-medium">Página <strong>{{ currentPage }}</strong> de <strong>{{ totalPages }}</strong></span>
+        <div class="flex items-center gap-1">
+          <button mat-icon-button (click)="goToPage(1)" [disabled]="currentPage === 1" title="Primera página">
+            <mat-icon>first_page</mat-icon>
+          </button>
+          <button mat-icon-button (click)="goToPage(currentPage - 1)" [disabled]="currentPage === 1" title="Anterior">
+            <mat-icon>chevron_left</mat-icon>
+          </button>
+          @for (p of pagesArray; track p) {
+            <button mat-stroked-button (click)="goToPage(p)" [color]="p === currentPage ? 'primary' : ''" class="btn-page-num">
+              {{ p }}
+            </button>
+          }
+          <button mat-icon-button (click)="goToPage(currentPage + 1)" [disabled]="currentPage >= totalPages" title="Siguiente">
+            <mat-icon>chevron_right</mat-icon>
+          </button>
+          <button mat-icon-button (click)="goToPage(totalPages)" [disabled]="currentPage >= totalPages" title="Última página">
+            <mat-icon>last_page</mat-icon>
+          </button>
+        </div>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card class="table-card" appearance="outlined">
+    <mat-card-content>
+      @if (loading) {
+        <div class="loading-state">
+          <mat-spinner diameter="40"></mat-spinner>
+          <p>Cargando categorías...</p>
+        </div>
+      } @else if (filteredCategories.length === 0) {
+        <div class="empty-state">
+          <mat-icon class="empty-icon">category</mat-icon>
+          <h3 class="text-base font-bold text-gray-800">No se encontraron categorías</h3>
+          <p class="text-sm text-gray-500">No hay registros que coincidan con los criterios seleccionados.</p>
+          @if (searchTerm) {
+            <button mat-stroked-button color="primary" (click)="clearSearch()">Limpiar filtro</button>
+          } @else {
+            <button mat-flat-button color="primary" (click)="openCreateModal()">
+              <mat-icon>add</mat-icon>
+              <span>Crear Primera Categoría</span>
+            </button>
+          }
+        </div>
+      } @else {
+        <div class="table-responsive">
+          <table class="users-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Nombre</th>
+                <th>Descripción</th>
+                <th>Estado</th>
+                <th class="text-right">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (c of paginatedCategories; track c.id) {
+                <tr [class.inactive-row]="c.isActive === false">
+                  <td class="font-mono text-muted">#{{ c.id }}</td>
+                  <td class="font-medium text-main">
+                    <div class="entity-cell">
+                      <span class="entity-avatar">
+                        {{ c.name ? c.name.charAt(0).toUpperCase() : 'C' }}
+                      </span>
+                      <span class="font-semibold text-gray-900">{{ c.name }}</span>
+                    </div>
+                  </td>
+                  <td class="text-muted">{{ c.description || '—' }}</td>
+                  <td>
+                    @if (c.isActive !== false) {
+                      <span class="status-badge status-active">
+                        <span class="status-dot"></span> Activo
+                      </span>
+                    } @else {
+                      <span class="status-badge status-inactive">
+                        <span class="status-dot"></span> Inactivo
+                      </span>
+                    }
+                  </td>
+                  <td class="text-right">
+                    <div class="actions-group">
+                      <button mat-icon-button color="primary" (click)="openEditModal(c)" title="Editar Categoría">
+                        <mat-icon>edit</mat-icon>
+                      </button>
+                      <button mat-icon-button color="warn" (click)="deleteCategory(c)" title="Eliminar Categoría">
+                        <mat-icon>delete</mat-icon>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </mat-card-content>
+  </mat-card>
+
+  @if (isModalOpen) {
+    <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" (click)="closeModal()">
+      <div class="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col" (click)="$event.stopPropagation()">
+        <div class="p-4 border-b border-gray-100 flex justify-between items-center">
+          <div class="flex items-center gap-2">
+            <mat-icon color="primary">{{ isEditMode ? 'edit' : 'category' }}</mat-icon>
+            <h2 class="text-base font-bold text-gray-900">{{ isEditMode ? 'Editar Categoría' : 'Nueva Categoría' }}</h2>
+          </div>
+          <button mat-icon-button (click)="closeModal()"><mat-icon>close</mat-icon></button>
+        </div>
+
+        @if (modalError) {
+          <div class="p-3 bg-red-100 text-red-800 text-xs flex items-center gap-2">
+            <mat-icon>error_outline</mat-icon>
+            <span>{{ modalError }}</span>
+          </div>
+        }
+
+        <form [formGroup]="categoryForm" (ngSubmit)="saveCategory()" class="p-6 flex flex-col gap-4">
+          <mat-form-field appearance="outline" class="w-full">
+            <mat-label>Nombre de la Categoría *</mat-label>
+            <input matInput formControlName="name" placeholder="Ej: Escritorios, Sillas, Accesorios">
+            @if (categoryForm.get('name')?.touched && categoryForm.get('name')?.invalid) {
+              <mat-error>El nombre es obligatorio.</mat-error>
+            }
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="w-full">
+            <mat-label>Descripción</mat-label>
+            <textarea matInput rows="3" formControlName="description" placeholder="Breve resumen de los productos incluidos"></textarea>
+          </mat-form-field>
+
+          <div class="flex justify-end gap-2 pt-2 border-t border-gray-100">
+            <button mat-stroked-button type="button" (click)="closeModal()" [disabled]="saving">Cancelar</button>
+            <button mat-flat-button color="primary" type="submit" [disabled]="saving || categoryForm.invalid">
+              <span>{{ isEditMode ? 'Guardar Cambios' : 'Crear Categoría' }}</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+</div>

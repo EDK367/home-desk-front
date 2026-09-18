@@ -1,0 +1,330 @@
+<div class="products-container">
+  <header class="page-header">
+    <div class="header-titles">
+      <h1 class="page-title">Catálogo de Productos</h1>
+    </div>
+  </header>
+
+  <mat-card class="toolbar-card" appearance="outlined">
+    <mat-card-content class="p-4 flex justify-between items-center gap-4 flex-wrap">
+      <mat-form-field appearance="outline" class="flex-1 max-w-lg mb-[-1.25em]">
+        <mat-label>Buscar producto</mat-label>
+        <mat-icon matPrefix>search</mat-icon>
+        <input 
+          matInput
+          type="text" 
+          [(ngModel)]="searchTerm" 
+          (ngModelChange)="onSearchChange()" 
+          placeholder="Buscar por nombre, SKU o descripción..." 
+        />
+        @if (searchTerm) {
+          <button mat-icon-button matSuffix (click)="clearSearch()" title="Limpiar búsqueda">
+            <mat-icon>close</mat-icon>
+          </button>
+        }
+      </mat-form-field>
+
+      <div class="flex items-center gap-3">
+        <mat-chip class="results-badge">
+          Total: {{ totalElements }} {{ totalElements === 1 ? 'registro' : 'registros' }}
+        </mat-chip>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card class="controls-top-card" appearance="outlined">
+    <mat-card-content class="p-3 flex justify-between items-center gap-4 flex-wrap">
+      <div class="flex items-center gap-3 flex-wrap">
+        <mat-form-field appearance="outline" class="w-44 mb-[-1.25em]">
+          <mat-label>Ordenar por</mat-label>
+          <mat-select [ngModel]="sortField" (ngModelChange)="onSortFieldChange($event)">
+            <mat-option value="name">Nombre del producto</mat-option>
+            <mat-option value="salePrice">Precio de venta</mat-option>
+            <mat-option value="sku">Código SKU</mat-option>
+            <mat-option value="minStockLevel">Stock mínimo</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="w-40 mb-[-1.25em]">
+          <mat-label>Dirección</mat-label>
+          <mat-select [ngModel]="sortOrder" (ngModelChange)="onSortOrderChange($event)">
+            <mat-option value="ASC">Ascendente</mat-option>
+            <mat-option value="DESC">Descendente</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="w-48 mb-[-1.25em]">
+          <mat-label>Categoría</mat-label>
+          <mat-select [ngModel]="selectedCategoryFilter" (ngModelChange)="onCategoryFilterChange($event)">
+            <mat-option value="ALL">Todas las categorías</mat-option>
+            @for (cat of categories; track cat.id) {
+              <mat-option [value]="cat.id != null ? cat.id.toString() : ''">{{ cat.name }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="w-36 mb-[-1.25em]">
+          <mat-label>Por página</mat-label>
+          <mat-select [ngModel]="pageSize" (ngModelChange)="onPageSizeChange($event)">
+            <mat-option [value]="5">5 por página</mat-option>
+            <mat-option [value]="10">10 por página</mat-option>
+            <mat-option [value]="20">20 por página</mat-option>
+            <mat-option [value]="50">50 por página</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <span class="text-xs text-gray-500 font-medium">Página <strong>{{ currentPage }}</strong> de <strong>{{ totalPages }}</strong></span>
+        <div class="flex items-center gap-1">
+          <button mat-icon-button (click)="goToPage(1)" [disabled]="currentPage === 1" title="Primera página">
+            <mat-icon>first_page</mat-icon>
+          </button>
+          <button mat-icon-button (click)="goToPage(currentPage - 1)" [disabled]="currentPage === 1" title="Anterior">
+            <mat-icon>chevron_left</mat-icon>
+          </button>
+          @for (p of pagesArray; track p) {
+            <button mat-stroked-button (click)="goToPage(p)" [color]="p === currentPage ? 'primary' : ''" class="btn-page-num">
+              {{ p }}
+            </button>
+          }
+          <button mat-icon-button (click)="goToPage(currentPage + 1)" [disabled]="currentPage >= totalPages" title="Siguiente">
+            <mat-icon>chevron_right</mat-icon>
+          </button>
+          <button mat-icon-button (click)="goToPage(totalPages)" [disabled]="currentPage >= totalPages" title="Última página">
+            <mat-icon>last_page</mat-icon>
+          </button>
+        </div>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card class="table-card" appearance="outlined">
+    <mat-card-content>
+      @if (loading) {
+        <div class="loading-state">
+          <mat-spinner diameter="40"></mat-spinner>
+          <p>Cargando productos...</p>
+        </div>
+      } @else if (filteredProducts.length === 0) {
+        <div class="empty-state">
+          <mat-icon class="empty-icon">inventory_2</mat-icon>
+          <h3 class="text-base font-bold text-gray-800">No se encontraron productos</h3>
+          <p class="text-sm text-gray-500">No existen productos que coincidan con los filtros aplicados.</p>
+          @if (searchTerm || selectedCategoryFilter !== 'ALL') {
+            <button mat-stroked-button (click)="clearSearch(); selectedCategoryFilter = 'ALL'; loadProducts()">
+              Restablecer filtros
+            </button>
+          }
+        </div>
+      } @else {
+        <div class="responsive-table-container">
+          <table class="users-table">
+            <thead>
+              <tr>
+                <th>Producto</th>
+                <th>SKU</th>
+                <th>Categoría</th>
+                <th>Unidad</th>
+                <th class="text-right">Precio Venta</th>
+                <th class="text-center">Stock Mínimo</th>
+                <th>Estado</th>
+                <th class="text-right">Acciones de Inventario</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (product of filteredProducts; track product.id) {
+                <tr>
+                  <td>
+                    <div class="entity-cell">
+                      <div class="entity-avatar bg-emerald-100 text-emerald-800">
+                        {{ (product.name || 'P').charAt(0).toUpperCase() }}
+                      </div>
+                      <div>
+                        <div class="font-medium text-gray-900">{{ product.name }}</div>
+                        <div class="text-xs text-gray-400 line-clamp-1">{{ product.description || '—' }}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="font-mono text-xs font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded">{{ product.sku }}</span>
+                  </td>
+                  <td>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800">
+                      {{ product.category?.name || 'General' }}
+                    </span>
+                  </td>
+                  <td class="font-mono text-xs text-gray-500">{{ product.unitOfMeasure || 'UNIT' }}</td>
+                  <td class="text-right font-bold text-emerald-700 font-mono">
+                    {{ formatCurrency(product.salePrice) }}
+                  </td>
+                  <td class="text-center font-mono text-gray-700">
+                    {{ product.minStockLevel ?? 0 }}
+                  </td>
+                  <td>
+                    @if (product.isActive) {
+                      <span class="status-badge status-active">
+                        <span class="status-dot"></span> Activo
+                      </span>
+                    } @else {
+                      <span class="status-badge status-inactive">
+                        <span class="status-dot"></span> Inactivo
+                      </span>
+                    }
+                  </td>
+                  <td class="text-right">
+                    <div class="actions-group">
+                      <button mat-icon-button color="primary" (click)="openPriceModal(product)" title="Modificar precio de venta">
+                        <mat-icon>attach_money</mat-icon>
+                      </button>
+                      <button mat-icon-button (click)="openMinStockModal(product)" title="Modificar stock mínimo de seguridad">
+                        <mat-icon>rule</mat-icon>
+                      </button>
+                      <a mat-icon-button routerLink="/inventory/movements" [queryParams]="{ productId: product.id }" title="Ver Kardex del producto">
+                        <mat-icon>receipt_long</mat-icon>
+                      </a>
+                      <a mat-icon-button routerLink="/inventory/lots" [queryParams]="{ productId: product.id }" title="Ver lotes del producto">
+                        <mat-icon>all_inbox</mat-icon>
+                      </a>
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </mat-card-content>
+  </mat-card>
+
+  @if (isPriceModalOpen && selectedProduct) {
+    <div class="modal-backdrop" (click)="closePriceModal()">
+      <mat-card class="modal-card modal-compact" (click)="$event.stopPropagation()">
+        <header class="modal-header">
+          <div class="modal-title-group">
+            <div class="modal-icon-badge">
+              <mat-icon>attach_money</mat-icon>
+            </div>
+            <div>
+              <h2 class="modal-title">Actualizar Precio de Venta</h2>
+              <p class="modal-subtitle">{{ selectedProduct.name }} (SKU: {{ selectedProduct.sku }})</p>
+            </div>
+          </div>
+
+          <button mat-icon-button (click)="closePriceModal()" title="Cerrar modal">
+            <mat-icon>close</mat-icon>
+          </button>
+        </header>
+
+        <form [formGroup]="priceForm" (ngSubmit)="savePrice()" class="modal-body">
+          @if (modalError) {
+            <div class="modal-error-banner">
+              <mat-icon color="warn">error</mat-icon>
+              <span>{{ modalError }}</span>
+            </div>
+          }
+
+          <div class="current-price-box">
+            <span class="text-muted">Precio actual:</span>
+            <strong class="font-bold text-main font-mono">{{ formatCurrency(selectedProduct.salePrice) }}</strong>
+          </div>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Nuevo Precio de Venta (Q) *</mat-label>
+            <input matInput type="number" formControlName="salePrice" min="0.01" step="0.01" placeholder="0.00" />
+            @if (priceForm.get('salePrice')?.invalid && priceForm.get('salePrice')?.touched) {
+              <mat-error>El precio debe ser mayor a 0.</mat-error>
+            }
+          </mat-form-field>
+
+          <footer class="modal-footer">
+            <button type="button" mat-button (click)="closePriceModal()" [disabled]="saving">
+              Cancelar
+            </button>
+            <button type="submit" mat-flat-button color="primary" [disabled]="saving || priceForm.invalid">
+              @if (saving) {
+                <mat-spinner diameter="18"></mat-spinner>
+                <span>Guardando...</span>
+              } @else {
+                <span>Actualizar Precio</span>
+              }
+            </button>
+          </footer>
+        </form>
+      </mat-card>
+    </div>
+  }
+
+  @if (isMinStockModalOpen && selectedProduct) {
+    <div class="modal-backdrop" (click)="closeMinStockModal()">
+      <mat-card class="modal-card modal-compact" (click)="$event.stopPropagation()">
+        <header class="modal-header">
+          <div class="modal-title-group">
+            <div class="modal-icon-badge">
+              <mat-icon>rule</mat-icon>
+            </div>
+            <div>
+              <h2 class="modal-title">Actualizar Stock Mínimo</h2>
+              <p class="modal-subtitle">{{ selectedProduct.name }} (SKU: {{ selectedProduct.sku }})</p>
+            </div>
+          </div>
+
+          <button mat-icon-button (click)="closeMinStockModal()" title="Cerrar modal">
+            <mat-icon>close</mat-icon>
+          </button>
+        </header>
+
+        <form [formGroup]="minStockForm" (ngSubmit)="saveMinStock()" class="modal-body">
+          @if (modalError) {
+            <div class="modal-error-banner">
+              <mat-icon color="warn">error</mat-icon>
+              <span>{{ modalError }}</span>
+            </div>
+          }
+
+          <div class="current-price-box">
+            <span class="text-muted">Stock mínimo actual:</span>
+            <strong class="font-bold text-main">{{ selectedProduct.minStockLevel ?? 0 }} unidades</strong>
+          </div>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Nuevo Nivel Mínimo de Existencias *</mat-label>
+            <input matInput type="number" formControlName="minStockLevel" min="0" step="1" placeholder="1" />
+            @if (minStockForm.get('minStockLevel')?.invalid && minStockForm.get('minStockLevel')?.touched) {
+              <mat-error>El valor no puede ser negativo.</mat-error>
+            }
+          </mat-form-field>
+
+          <footer class="modal-footer">
+            <button type="button" mat-button (click)="closeMinStockModal()" [disabled]="saving">
+              Cancelar
+            </button>
+            <button type="submit" mat-flat-button color="primary" [disabled]="saving || minStockForm.invalid">
+              @if (saving) {
+                <mat-spinner diameter="18"></mat-spinner>
+                <span>Guardando...</span>
+              } @else {
+                <span>Actualizar Stock Mínimo</span>
+              }
+            </button>
+          </footer>
+        </form>
+      </mat-card>
+    </div>
+  }
+
+  @if (toast?.show) {
+    <div class="toast-container" [ngClass]="toast?.type">
+      <div class="toast-icon">
+        <mat-icon>{{ toast?.type === 'success' ? 'check_circle' : 'error' }}</mat-icon>
+      </div>
+      <div class="toast-content">
+        <h4 class="toast-title">{{ toast?.title }}</h4>
+        <p class="toast-message">{{ toast?.message }}</p>
+      </div>
+      <button mat-icon-button (click)="closeToast()" title="Cerrar notificación">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+  }
+</div>

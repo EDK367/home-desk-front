@@ -207,7 +207,6 @@
   color: var(--color-text-muted, #6b7c74);
 }
 
-/* Secciones de contenido y tablas */
 .section-card {
   background: #ffffff;
   border: 1px solid var(--color-border, #d0ddd6);
@@ -389,7 +388,6 @@
   border-color: #b7c7be;
 }
 
-/* Badges de Estados de Compra */
 .status-badge {
   display: inline-flex;
   align-items: center;
