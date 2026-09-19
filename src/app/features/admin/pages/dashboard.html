@@ -21,7 +21,7 @@
     </mat-card-content>
   </mat-card>
 
-
+  <!-- Accesos Directos -->
   <section class="shortcuts-section">
     <h3 class="section-heading">Accesos Directos</h3>
     <div class="shortcuts-grid">
@@ -49,6 +49,18 @@
         </mat-card-content>
       </mat-card>
 
+      <mat-card class="shortcut-card" appearance="outlined" routerLink="/admin/inventory">
+        <mat-card-content class="shortcut-content">
+          <div class="shortcut-icon icon-inventory">
+            <mat-icon>inventory_2</mat-icon>
+          </div>
+          <div class="shortcut-text">
+            <h4>Inventario y Kardex</h4>
+          </div>
+          <mat-icon class="shortcut-arrow">chevron_right</mat-icon>
+        </mat-card-content>
+      </mat-card>
+
       <mat-card class="shortcut-card" appearance="outlined" routerLink="/admin/profile">
         <mat-card-content class="shortcut-content">
           <div class="shortcut-icon icon-account">
@@ -62,5 +74,392 @@
       </mat-card>
     </div>
   </section>
-</div>
 
+  <!-- Tarjetas KPI -->
+  <section class="stats-grid">
+    <mat-card class="stat-card" appearance="outlined">
+      <mat-card-content class="stat-content">
+        <div class="stat-icon icon-users">
+          <mat-icon>people</mat-icon>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Usuarios Registrados</span>
+          <strong class="stat-value">{{ loadingStats ? '...' : totalUsers }}</strong>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="stat-card" appearance="outlined">
+      <mat-card-content class="stat-content">
+        <div class="stat-icon icon-roles">
+          <mat-icon>manage_accounts</mat-icon>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Roles del Sistema</span>
+          <strong class="stat-value">{{ loadingStats ? '...' : totalRoles }}</strong>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="stat-card" appearance="outlined">
+      <mat-card-content class="stat-content">
+        <div class="stat-icon icon-customer">
+          <mat-icon>star</mat-icon>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Cliente Principal</span>
+          <strong class="stat-value text-compact">
+            {{ loadingTopCustomers ? '...' : (topCustomersSales[0]?.customerName || 'N/A') }}
+          </strong>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="stat-card" appearance="outlined">
+      <mat-card-content class="stat-content">
+        <div class="stat-icon icon-alerts">
+          <mat-icon color="warn">warning</mat-icon>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Alertas de Stock Bajo</span>
+          <strong class="stat-value">{{ loadingLowestStock ? '...' : lowestStockProducts.length }}</strong>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </section>
+
+  <!-- Reportes del Sistema -->
+  <section class="reports-section">
+    <h3 class="section-heading">Reportes</h3>
+
+    <mat-card class="report-tabs-card" appearance="outlined">
+      <mat-tab-group dynamicHeight animationDuration="150ms">
+        
+        <!-- Tab 1: Clientes y Proveedores -->
+        <mat-tab label="Clientes y Proveedores">
+          <div class="tab-content-grid">
+            
+            <!-- Top 10 Clientes por Ventas -->
+            <div class="report-table-card">
+              <div class="table-header">
+                <h4>Top 10 Clientes por Compras</h4>
+              </div>
+
+              @if (loadingTopCustomers) {
+                <div class="loading-container">
+                  <mat-spinner diameter="32"></mat-spinner>
+                  <span>Cargando datos...</span>
+                </div>
+              } @else if (topCustomersSales.length === 0) {
+                <div class="empty-state">
+                  <p>No se encontraron datos</p>
+                </div>
+              } @else {
+                <div class="table-responsive">
+                  <table class="report-table">
+                    <thead>
+                      <tr>
+                        <th>#</th>
+                        <th>Cliente</th>
+                        <th class="text-center">Compras</th>
+                        <th class="text-right">Monto Total</th>
+                        <th class="text-right">Última Compra</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (c of topCustomersSales; track c.id; let i = $index) {
+                        <tr>
+                          <td>{{ i + 1 }}</td>
+                          <td>{{ c.customerName }}</td>
+                          <td class="text-center">{{ c.saleCount }}</td>
+                          <td class="text-right">{{ formatCurrency(c.totalPurchaseAmount) }}</td>
+                          <td class="text-right">{{ formatDate(c.lastPurchaseDate) }}</td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              }
+            </div>
+
+            <!-- Top 5 Proveedores por Compras -->
+            <div class="report-table-card">
+              <div class="table-header">
+                <h4>Top 5 Proveedores con Mayor Compra</h4>
+              </div>
+
+              @if (loadingTopSuppliers) {
+                <div class="loading-container">
+                  <mat-spinner diameter="32"></mat-spinner>
+                  <span>Cargando datos...</span>
+                </div>
+              } @else if (topSuppliersPurchases.length === 0) {
+                <div class="empty-state">
+                  <p>No se encontraron datos</p>
+                </div>
+              } @else {
+                <div class="table-responsive">
+                  <table class="report-table">
+                    <thead>
+                      <tr>
+                        <th>#</th>
+                        <th>Proveedor</th>
+                        <th class="text-center">Órdenes</th>
+                        <th class="text-right">Monto Acumulado</th>
+                        <th class="text-right">Última Orden</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (s of topSuppliersPurchases; track s.supplierId; let i = $index) {
+                        <tr>
+                          <td>{{ i + 1 }}</td>
+                          <td>{{ s.supplierName }}</td>
+                          <td class="text-center">{{ s.purchaseCount }}</td>
+                          <td class="text-right">{{ formatCurrency(s.totalPurchaseAmount) }}</td>
+                          <td class="text-right">{{ formatDate(s.lastPurchaseDate) }}</td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              }
+            </div>
+
+          </div>
+        </mat-tab>
+
+        <!-- Tab 2: Ventas e Ingresos -->
+        <mat-tab label="Productos Más Vendidos e Ingresos">
+          <div class="tab-content-grid">
+
+            <!-- Top 10 Productos Más Vendidos -->
+            <div class="report-table-card">
+              <div class="table-header">
+                <h4>Top 10 Productos Más Vendidos</h4>
+              </div>
+
+              @if (loadingTopProducts) {
+                <div class="loading-container">
+                  <mat-spinner diameter="32"></mat-spinner>
+                  <span>Cargando datos...</span>
+                </div>
+              } @else if (topProductsSold.length === 0) {
+                <div class="empty-state">
+                  <p>No se encontraron datos</p>
+                </div>
+              } @else {
+                <div class="table-responsive">
+                  <table class="report-table">
+                    <thead>
+                      <tr>
+                        <th>#</th>
+                        <th>Producto</th>
+                        <th>SKU</th>
+                        <th>Categoría</th>
+                        <th class="text-center">Uds. Vendidas</th>
+                        <th class="text-right">Ingresos</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (p of topProductsSold; track p.productId; let i = $index) {
+                        <tr>
+                          <td>{{ i + 1 }}</td>
+                          <td>{{ p.product }}</td>
+                          <td>{{ p.sku || '—' }}</td>
+                          <td>{{ p.category || 'General' }}</td>
+                          <td class="text-center">{{ p.totalQuantitySold }}</td>
+                          <td class="text-right">{{ formatCurrency(p.totalRevenue) }}</td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              }
+            </div>
+
+            <!-- Top 10 Productos por Ingreso -->
+            <div class="report-table-card">
+              <div class="table-header">
+                <h4>Top 10 Productos por Mayor Ingreso</h4>
+              </div>
+
+              @if (loadingTopRevenue) {
+                <div class="loading-container">
+                  <mat-spinner diameter="32"></mat-spinner>
+                  <span>Cargando datos...</span>
+                </div>
+              } @else if (topProductsRevenue.length === 0) {
+                <div class="empty-state">
+                  <p>No se encontraron datos</p>
+                </div>
+              } @else {
+                <div class="table-responsive">
+                  <table class="report-table">
+                    <thead>
+                      <tr>
+                        <th>#</th>
+                        <th>Producto</th>
+                        <th>SKU</th>
+                        <th>Categoría</th>
+                        <th class="text-center">Uds. Vendidas</th>
+                        <th class="text-right">Total Ingresos</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (r of topProductsRevenue; track r.productId; let i = $index) {
+                        <tr>
+                          <td>{{ i + 1 }}</td>
+                          <td>{{ r.productName }}</td>
+                          <td>{{ r.sku || '—' }}</td>
+                          <td>{{ r.categoryName || 'General' }}</td>
+                          <td class="text-center">{{ r.totalQuantitySold }}</td>
+                          <td class="text-right">{{ formatCurrency(r.totalRevenue) }}</td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              }
+            </div>
+
+          </div>
+        </mat-tab>
+
+        <!-- Tab 3: Inventario y Abastecimiento -->
+        <mat-tab label="Inventario y Abastecimiento">
+          <div class="tab-content-grid">
+
+            <!-- Productos con Menor Stock -->
+            <div class="report-table-card">
+              <div class="table-header">
+                <h4>Productos con Menor Stock Disponible</h4>
+              </div>
+
+              @if (loadingLowestStock) {
+                <div class="loading-container">
+                  <mat-spinner diameter="32"></mat-spinner>
+                  <span>Cargando datos...</span>
+                </div>
+              } @else if (lowestStockProducts.length === 0) {
+                <div class="empty-state">
+                  <p>No se encontraron datos</p>
+                </div>
+              } @else {
+                <div class="table-responsive">
+                  <table class="report-table">
+                    <thead>
+                      <tr>
+                        <th>Producto</th>
+                        <th>SKU</th>
+                        <th>Categoría</th>
+                        <th class="text-center">Stock Actual</th>
+                        <th class="text-center">Mínimo</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (item of lowestStockProducts; track item.productId) {
+                        <tr>
+                          <td>{{ item.product }}</td>
+                          <td>{{ item.sku || '—' }}</td>
+                          <td>{{ item.category || 'General' }}</td>
+                          <td class="text-center">{{ item.quantityOnHand ?? 0 }}</td>
+                          <td class="text-center">{{ item.minStockLevel ?? 0 }}</td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              }
+            </div>
+
+            <!-- Productos Más Frecuentes en Compras -->
+            <div class="report-table-card">
+              <div class="table-header">
+                <h4>Productos Adquiridos con Mayor Frecuencia</h4>
+              </div>
+
+              @if (loadingFrequentPurchases) {
+                <div class="loading-container">
+                  <mat-spinner diameter="32"></mat-spinner>
+                  <span>Cargando datos...</span>
+                </div>
+              } @else if (mostFrequentlyPurchased.length === 0) {
+                <div class="empty-state">
+                  <p>No se encontraron datos</p>
+                </div>
+              } @else {
+                <div class="table-responsive">
+                  <table class="report-table">
+                    <thead>
+                      <tr>
+                        <th>Producto</th>
+                        <th>SKU</th>
+                        <th class="text-center">Compras</th>
+                        <th class="text-center">Cantidad</th>
+                        <th class="text-right">Total Invertido</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (p of mostFrequentlyPurchased; track p.productId) {
+                        <tr>
+                          <td>{{ p.product }}</td>
+                          <td>{{ p.sku || '—' }}</td>
+                          <td class="text-center">{{ p.purchaseCount }}</td>
+                          <td class="text-center">{{ p.totalQuantityPurchased }}</td>
+                          <td class="text-right">{{ formatCurrency(p.totalPurchaseAmount) }}</td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              }
+            </div>
+
+            <!-- Productos con Mayor Movimiento -->
+            <div class="report-table-card full-width">
+              <div class="table-header">
+                <h4>Mayor Movimiento en Kardex</h4>
+              </div>
+
+              @if (loadingMovements) {
+                <div class="loading-container">
+                  <mat-spinner diameter="32"></mat-spinner>
+                  <span>Cargando datos...</span>
+                </div>
+              } @else if (mostInventoryMovements.length === 0) {
+                <div class="empty-state">
+                  <p>No se encontraron datos</p>
+                </div>
+              } @else {
+                <div class="table-responsive">
+                  <table class="report-table">
+                    <thead>
+                      <tr>
+                        <th>Producto</th>
+                        <th>SKU</th>
+                        <th>Categoría</th>
+                        <th class="text-center">Total Movimientos</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (m of mostInventoryMovements; track m.productId) {
+                        <tr>
+                          <td>{{ m.product }}</td>
+                          <td>{{ m.sku || '—' }}</td>
+                          <td>{{ m.category || 'General' }}</td>
+                          <td class="text-center">{{ m.movementCount }}</td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              }
+            </div>
+
+          </div>
+        </mat-tab>
+
+      </mat-tab-group>
+    </mat-card>
+  </section>
+</div>

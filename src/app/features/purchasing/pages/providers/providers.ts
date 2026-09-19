@@ -27,13 +27,6 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatOptionModule } from '@angular/material/core';
 
-interface ToastState {
-  show: boolean;
-  type: 'success' | 'error';
-  title: string;
-  message: string;
-}
-
 @Component({
   selector: 'app-providers',
   standalone: true,
@@ -104,9 +97,6 @@ export class Providers implements OnInit, OnDestroy {
     cost: [null, [Validators.required, Validators.min(0)]]
   });
 
-  toast: ToastState | null = null;
-  private toastTimeout: any = null;
-
   ngOnInit(): void {
     this.loadSuppliers();
     this.loadProductsList();
@@ -130,7 +120,6 @@ export class Providers implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.routerSub?.unsubscribe();
-    if (this.toastTimeout) clearTimeout(this.toastTimeout);
   }
 
   loadProductsList(): void {
@@ -330,7 +319,6 @@ export class Providers implements OnInit, OnDestroy {
       next: () => {
         this.savingProduct = false;
         this.linkProductForm.reset();
-        this.showToast('success', 'Producto Asociado', 'El producto ha sido vinculado al proveedor exitosamente.');
         this.loadSupplierProducts(this.selectedSupplier!.id!);
       },
       error: (err) => {
@@ -373,15 +361,12 @@ export class Providers implements OnInit, OnDestroy {
       next: () => {
         this.savingProduct = false;
         this.closeEditProductModal();
-        this.showToast('success', 'Actualización Exitosa', 'El costo y SKU del producto han sido actualizados.');
         if (this.selectedSupplier?.id) {
           this.loadSupplierProducts(this.selectedSupplier.id);
         }
       },
-      error: (err) => {
+      error: () => {
         this.savingProduct = false;
-        const msg = extractHttpErrorMessage(err);
-        this.showToast('error', 'Error al actualizar', msg);
       }
     });
   }
@@ -393,15 +378,11 @@ export class Providers implements OnInit, OnDestroy {
     if (confirm(`¿Está seguro de desvincular "${prodName}" de este proveedor?`)) {
       this.supplierProductService.deleteSupplierProduct(sp.id).subscribe({
         next: () => {
-          this.showToast('success', 'Producto Desvinculado', `Se retiró el producto del catálogo del proveedor.`);
           if (this.selectedSupplier?.id) {
             this.loadSupplierProducts(this.selectedSupplier.id);
           }
         },
-        error: (err) => {
-          const msg = extractHttpErrorMessage(err);
-          this.showToast('error', 'Error al desvincular', msg);
-        }
+        error: () => {}
       });
     }
   }
@@ -410,19 +391,6 @@ export class Providers implements OnInit, OnDestroy {
     this.router.navigate(['/purchasing/purchases'], {
       queryParams: { action: 'new', supplierId: supplier.id }
     });
-  }
-
-  showToast(type: 'success' | 'error', title: string, message: string): void {
-    if (this.toastTimeout) clearTimeout(this.toastTimeout);
-    this.toast = { show: true, type, title, message };
-    this.toastTimeout = setTimeout(() => this.closeToast(), 4500);
-  }
-
-  closeToast(): void {
-    if (this.toast) {
-      this.toast.show = false;
-      this.toast = null;
-    }
   }
 
   formatCurrency(value?: number): string {

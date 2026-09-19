@@ -23,13 +23,6 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatOptionModule } from '@angular/material/core';
 
-interface ToastState {
-  show: boolean;
-  type: 'success' | 'error';
-  title: string;
-  message: string;
-}
-
 @Component({
   selector: 'app-admin-movements',
   standalone: true,
@@ -81,9 +74,6 @@ export class AdminMovements implements OnInit, OnDestroy {
   isLotsModalOpen = false;
   selectedMovement: InventoryMovementResponse | null = null;
 
-  toast: ToastState | null = null;
-  private toastTimeout: any = null;
-
   ngOnInit(): void {
     this.loadProducts();
 
@@ -116,7 +106,6 @@ export class AdminMovements implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.routerSub?.unsubscribe();
-    if (this.toastTimeout) clearTimeout(this.toastTimeout);
   }
 
   loadProducts(): void {
@@ -183,7 +172,6 @@ export class AdminMovements implements OnInit, OnDestroy {
     this.totalElements = 0;
     this.totalPages = 1;
     this.loading = false;
-    this.showToast('error', 'Error al cargar movimientos', extractHttpErrorMessage(err) || 'No se pudo obtener el Kardex.');
     this.cdr.detectChanges();
   }
 
@@ -310,19 +298,5 @@ export class AdminMovements implements OnInit, OnDestroy {
   isPositiveQuantity(type?: string): boolean {
     if (!type) return true;
     return type.includes('ENTRADA') || type === 'DEVOLUCION_VENTA';
-  }
-
-  showToast(type: 'success' | 'error', title: string, message: string): void {
-    if (this.toastTimeout) clearTimeout(this.toastTimeout);
-    this.toast = { show: true, type, title, message };
-    this.toastTimeout = setTimeout(() => {
-      this.toast = null;
-      this.cdr.detectChanges();
-    }, 4000);
-  }
-
-  closeToast(): void {
-    if (this.toastTimeout) clearTimeout(this.toastTimeout);
-    this.toast = null;
   }
 }

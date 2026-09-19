@@ -22,6 +22,7 @@ import {
 import { CustomerResponse } from '../../../../core/models/customer';
 import { ProductResponse } from '../../../../core/models/product';
 import { PaymentMethodResponse } from '../../../../core/models/payment';
+import { NotificationService } from '../../../../core/services/notification';
 
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -32,13 +33,6 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatOptionModule } from '@angular/material/core';
-
-interface ToastState {
-  show: boolean;
-  type: 'success' | 'error';
-  title: string;
-  message: string;
-}
 
 interface SaleItemRow {
   productId: number | null;
@@ -79,6 +73,7 @@ export class SalesList implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private cdr = inject(ChangeDetectorRef);
+  private notificationService = inject(NotificationService);
 
   private routerSub: Subscription | null = null;
 
@@ -129,9 +124,6 @@ export class SalesList implements OnInit, OnDestroy {
 
   itemRows: SaleItemRow[] = [];
 
-  toast: ToastState | null = null;
-  private toastTimeout: any = null;
-
   ngOnInit(): void {
     this.loadCatalogData();
     this.loadSales();
@@ -167,7 +159,6 @@ export class SalesList implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.routerSub?.unsubscribe();
-    if (this.toastTimeout) clearTimeout(this.toastTimeout);
   }
 
   loadCatalogData(): void {
@@ -423,7 +414,7 @@ export class SalesList implements OnInit, OnDestroy {
     if (this.itemRows.length > 1) {
       this.itemRows.splice(index, 1);
     } else {
-      this.showToast('error', 'Validación', 'La venta debe contener al menos un producto.');
+      this.notificationService.showError('La venta debe contener al menos un producto.', 'Validación');
     }
   }
 
@@ -551,12 +542,6 @@ export class SalesList implements OnInit, OnDestroy {
           this.invoicePdfService.generateInvoicePdf(createdSale, true);
         }
 
-        this.showToast(
-          'success',
-          'Venta Facturada',
-          `La venta con factura ${createdSale?.invoiceNumber || ''} se registró exitosamente y se generó el comprobante PDF.`
-        );
-
         this.currentPage = 1;
         this.loadSales();
         this.loadInitialStocks();
@@ -626,7 +611,7 @@ export class SalesList implements OnInit, OnDestroy {
 
   openStatusModal(sale: SaleResponse): void {
     if (sale.status?.name === 'CANCELADA') {
-      this.showToast('error', 'Aviso', 'No se puede modificar el estado de una venta cancelada.');
+      this.notificationService.showError('No se puede modificar el estado de una venta cancelada.', 'Aviso');
       return;
     }
     this.selectedSale = sale;
@@ -659,8 +644,6 @@ export class SalesList implements OnInit, OnDestroy {
     this.saleService.updateSaleStatus(this.selectedSale.id, { statusId: this.newStatusIdToApply }).subscribe({
       next: (res) => {
         this.statusUpdating = false;
-        const updatedStatus = res.data?.status?.name || 'actualizado';
-        this.showToast('success', 'Estado Actualizado', `La factura ${this.selectedSale?.invoiceNumber} cambió al estado: ${updatedStatus}.`);
         this.closeStatusModal();
         if (this.isDetailModalOpen && res.data) {
           this.selectedSale = res.data;
@@ -674,19 +657,6 @@ export class SalesList implements OnInit, OnDestroy {
         this.cdr.detectChanges();
       }
     });
-  }
-
-  showToast(type: 'success' | 'error', title: string, message: string): void {
-    if (this.toastTimeout) clearTimeout(this.toastTimeout);
-    this.toast = { show: true, type, title, message };
-    this.toastTimeout = setTimeout(() => this.closeToast(), 4500);
-  }
-
-  closeToast(): void {
-    if (this.toast) {
-      this.toast.show = false;
-      this.toast = null;
-    }
   }
 
   formatDate(isoDate?: string): string {

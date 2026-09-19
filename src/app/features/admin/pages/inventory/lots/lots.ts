@@ -21,13 +21,6 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatOptionModule } from '@angular/material/core';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 
-interface ToastState {
-  show: boolean;
-  type: 'success' | 'error';
-  title: string;
-  message: string;
-}
-
 @Component({
   selector: 'app-admin-lots',
   standalone: true,
@@ -74,9 +67,6 @@ export class AdminLots implements OnInit, OnDestroy {
 
   loading = true;
 
-  toast: ToastState | null = null;
-  private toastTimeout: any = null;
-
   ngOnInit(): void {
     this.loadProducts();
 
@@ -106,7 +96,6 @@ export class AdminLots implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.routerSub?.unsubscribe();
-    if (this.toastTimeout) clearTimeout(this.toastTimeout);
   }
 
   loadProducts(): void {
@@ -181,7 +170,6 @@ export class AdminLots implements OnInit, OnDestroy {
     this.totalElements = 0;
     this.totalPages = 1;
     this.loading = false;
-    this.showToast('error', 'Error al cargar lotes', extractHttpErrorMessage(err) || 'No se pudieron consultar los lotes.');
     this.cdr.detectChanges();
   }
 
@@ -252,19 +240,5 @@ export class AdminLots implements OnInit, OnDestroy {
         return idMatch.includes(term) || prodMatch.includes(term) || skuMatch.includes(term) || purchaseMatch.includes(term);
       });
     }
-  }
-
-  showToast(type: 'success' | 'error', title: string, message: string): void {
-    if (this.toastTimeout) clearTimeout(this.toastTimeout);
-    this.toast = { show: true, type, title, message };
-    this.toastTimeout = setTimeout(() => {
-      this.toast = null;
-      this.cdr.detectChanges();
-    }, 4000);
-  }
-
-  closeToast(): void {
-    if (this.toastTimeout) clearTimeout(this.toastTimeout);
-    this.toast = null;
   }
 }

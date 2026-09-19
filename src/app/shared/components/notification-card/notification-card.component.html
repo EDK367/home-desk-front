@@ -1,0 +1,16 @@
+<div class="notifications-container">
+  @for (notif of notifications(); track notif.id) {
+    <div class="simple-card">
+      <div class="card-header">
+        <span class="card-title">{{ notif.title }}</span>
+        <button type="button" class="card-close" (click)="dismiss(notif.id)" aria-label="Cerrar">×</button>
+      </div>
+      <div class="card-body">
+        <p class="card-message">{{ notif.message }}</p>
+      </div>
+      <div class="card-footer">
+        <span class="card-time">{{ notif.timestamp | date:'shortTime' }}</span>
+      </div>
+    </div>
+  }
+</div>

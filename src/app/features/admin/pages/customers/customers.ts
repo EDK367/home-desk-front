@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
 import { CustomerService } from '../../../../core/services/customer';
-import { extractHttpErrorMessage } from '../../../../core/interceptors/error.interceptor';
 import { CustomerResponse } from '../../../../core/models/customer';
 
 import { MatCardModule } from '@angular/material/card';
@@ -14,13 +13,6 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
-
-interface ToastState {
-  show: boolean;
-  type: 'success' | 'error';
-  title: string;
-  message: string;
-}
 
 @Component({
   selector: 'app-admin-customers',
@@ -62,9 +54,6 @@ export class Customers implements OnInit {
   selectedCustomer: CustomerResponse | null = null;
   isDetailModalOpen = false;
 
-  toast: ToastState | null = null;
-  private toastTimeout: any = null;
-
   ngOnInit(): void {
     this.loadCustomers();
   }
@@ -90,9 +79,8 @@ export class Customers implements OnInit {
             this.loading = false;
             this.cdr.detectChanges();
           },
-          error: (err) => {
+          error: () => {
             this.loading = false;
-            this.showToast('error', 'Error', extractHttpErrorMessage(err) || 'Error al cargar clientes.');
             this.cdr.detectChanges();
           }
         });
@@ -201,28 +189,10 @@ export class Customers implements OnInit {
     if (confirm(`¿Está seguro de desactivar al cliente "${c.fullName}"?`)) {
       this.customerService.deleteCustomer(c.id).subscribe({
         next: () => {
-          this.showToast('success', 'Cliente Desactivado', 'El cliente ha sido desactivado en el sistema.');
           this.loadCustomers();
         },
-        error: (err) => {
-          this.showToast('error', 'Error', extractHttpErrorMessage(err) || 'Error al desactivar cliente.');
-        }
+        error: () => {}
       });
     }
-  }
-
-  showToast(type: 'success' | 'error', title: string, message: string): void {
-    if (this.toastTimeout) clearTimeout(this.toastTimeout);
-    this.toast = { show: true, type, title, message };
-    this.cdr.detectChanges();
-    this.toastTimeout = setTimeout(() => {
-      this.toast = null;
-      this.cdr.detectChanges();
-    }, 4500);
-  }
-
-  closeToast(): void {
-    if (this.toastTimeout) clearTimeout(this.toastTimeout);
-    this.toast = null;
   }
 }

@@ -619,19 +619,4 @@
       </mat-card>
     </div>
   }
-
-  @if (toast?.show) {
-    <div class="toast-container" [ngClass]="toast?.type">
-      <div class="toast-icon">
-        <mat-icon>{{ toast?.type === 'success' ? 'check_circle' : 'error' }}</mat-icon>
-      </div>
-      <div class="toast-content">
-        <h4 class="toast-title">{{ toast?.title }}</h4>
-        <p class="toast-message">{{ toast?.message }}</p>
-      </div>
-      <button mat-icon-button (click)="closeToast()" title="Cerrar notificación">
-        <mat-icon>close</mat-icon>
-      </button>
-    </div>
-  }
 </div>

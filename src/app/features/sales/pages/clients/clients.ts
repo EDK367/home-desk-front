@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, inject, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -20,13 +20,6 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 import { MatOptionModule } from '@angular/material/core';
 
-interface ToastState {
-  show: boolean;
-  type: 'success' | 'error';
-  title: string;
-  message: string;
-}
-
 @Component({
   selector: 'app-sales-clients',
   standalone: true,
@@ -47,7 +40,7 @@ interface ToastState {
   templateUrl: './clients.html',
   styleUrl: './clients.css'
 })
-export class Clients implements OnInit, OnDestroy {
+export class Clients implements OnInit {
   private customerService = inject(CustomerService);
   private saleService = inject(SaleService);
   private invoicePdfService = inject(InvoicePdfService);
@@ -91,15 +84,8 @@ export class Clients implements OnInit, OnDestroy {
     address: ['']
   });
 
-  toast: ToastState | null = null;
-  private toastTimeout: any = null;
-
   ngOnInit(): void {
     this.loadCustomers();
-  }
-
-  ngOnDestroy(): void {
-    if (this.toastTimeout) clearTimeout(this.toastTimeout);
   }
 
   loadCustomers(): void {
@@ -115,8 +101,7 @@ export class Clients implements OnInit, OnDestroy {
         this.loading = false;
         this.cdr.detectChanges();
       },
-      error: (err) => {
-        //this.showToast('error', 'Error de carga', extractHttpErrorMessage(err) || 'No se pudo cargar la lista de clientes.');
+      error: () => {
         this.customers = [];
         this.applyFilter();
         this.loading = false;
@@ -294,7 +279,6 @@ export class Clients implements OnInit, OnDestroy {
         next: (res) => {
           this.saving = false;
           this.closeModal();
-          //this.showToast('success', 'Cliente Actualizado', `El cliente ${req.fullName} se actualizó correctamente.`);
           this.loadCustomers();
         },
         error: (err) => {
@@ -308,7 +292,6 @@ export class Clients implements OnInit, OnDestroy {
         next: (res) => {
           this.saving = false;
           this.closeModal();
-          //this.showToast('success', 'Cliente Registrado', `El cliente ${req.fullName} fue creado con éxito.`);
           this.loadCustomers();
         },
         error: (err) => {
@@ -337,9 +320,8 @@ export class Clients implements OnInit, OnDestroy {
         this.loadingHistory = false;
         this.cdr.detectChanges();
       },
-      error: (err) => {
+      error: () => {
         this.loadingHistory = false;
-        //this.showToast('error', 'Historial', extractHttpErrorMessage(err) || 'No se pudieron consultar las ventas del cliente.');
         this.cdr.detectChanges();
       }
     });
@@ -363,7 +345,6 @@ export class Clients implements OnInit, OnDestroy {
       next: (res) => {
         sale.items = res?.data || [];
         this.invoicePdfService.generateInvoicePdf(sale, true);
-        //this.showToast('success', 'PDF Generado', `Factura ${sale.invoiceNumber || '#' + sale.id} descargada.`);
       },
       error: () => {
         this.invoicePdfService.generateInvoicePdf(sale, true);
@@ -388,20 +369,5 @@ export class Clients implements OnInit, OnDestroy {
     } catch {
       return dateStr;
     }
-  }
-
-  showToast(type: 'success' | 'error', title: string, message: string): void {
-    if (this.toastTimeout) clearTimeout(this.toastTimeout);
-    this.toast = { show: true, type, title, message };
-    this.cdr.detectChanges();
-    this.toastTimeout = setTimeout(() => {
-      this.toast = null;
-      this.cdr.detectChanges();
-    }, 4500);
-  }
-
-  closeToast(): void {
-    if (this.toastTimeout) clearTimeout(this.toastTimeout);
-    this.toast = null;
   }
 }

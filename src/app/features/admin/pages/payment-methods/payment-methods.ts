@@ -15,13 +15,6 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 
-interface ToastState {
-  show: boolean;
-  type: 'success' | 'error';
-  title: string;
-  message: string;
-}
-
 @Component({
   selector: 'app-admin-payment-methods',
   standalone: true,
@@ -73,9 +66,6 @@ export class PaymentMethods implements OnInit {
     description: ['']
   });
 
-  toast: ToastState | null = null;
-  private toastTimeout: any = null;
-
   ngOnInit(): void {
     this.loadPaymentMethods();
   }
@@ -101,9 +91,8 @@ export class PaymentMethods implements OnInit {
             this.loading = false;
             this.cdr.detectChanges();
           },
-          error: (err) => {
+          error: () => {
             this.loading = false;
-            this.showToast('error', 'Error', extractHttpErrorMessage(err) || 'Error al cargar métodos de pago.');
             this.cdr.detectChanges();
           }
         });
@@ -240,7 +229,6 @@ export class PaymentMethods implements OnInit {
         next: () => {
           this.saving = false;
           this.closeModal();
-          this.showToast('success', 'Método Actualizado', `El método ${req.name} ha sido modificado.`);
           this.loadPaymentMethods();
         },
         error: (err) => {
@@ -254,7 +242,6 @@ export class PaymentMethods implements OnInit {
         next: () => {
           this.saving = false;
           this.closeModal();
-          this.showToast('success', 'Método Registrado', `El método ${req.name} ha sido creado con éxito.`);
           this.loadPaymentMethods();
         },
         error: (err) => {
@@ -271,28 +258,10 @@ export class PaymentMethods implements OnInit {
     if (confirm(`¿Está seguro de desactivar el método de pago "${m.name}"?`)) {
       this.paymentMethodService.deletePaymentMethod(m.id).subscribe({
         next: () => {
-          this.showToast('success', 'Método Desactivado', 'El método de pago ha sido desactivado.');
           this.loadPaymentMethods();
         },
-        error: (err) => {
-          this.showToast('error', 'Error', extractHttpErrorMessage(err) || 'No se pudo desactivar el método.');
-        }
+        error: () => {}
       });
     }
-  }
-
-  showToast(type: 'success' | 'error', title: string, message: string): void {
-    if (this.toastTimeout) clearTimeout(this.toastTimeout);
-    this.toast = { show: true, type, title, message };
-    this.cdr.detectChanges();
-    this.toastTimeout = setTimeout(() => {
-      this.toast = null;
-      this.cdr.detectChanges();
-    }, 4500);
-  }
-
-  closeToast(): void {
-    if (this.toastTimeout) clearTimeout(this.toastTimeout);
-    this.toast = null;
   }
 }

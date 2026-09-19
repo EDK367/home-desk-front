@@ -21,13 +21,6 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
-interface ToastState {
-  show: boolean;
-  type: 'success' | 'error';
-  title: string;
-  message: string;
-}
-
 @Component({
   selector: 'app-admin-inventory',
   standalone: true,
@@ -78,9 +71,6 @@ export class Inventory implements OnInit {
   isProductLotsModalOpen = false;
   selectedProductName = '';
 
-  toast: ToastState | null = null;
-  private toastTimeout: any = null;
-
   ngOnInit(): void {
     this.loadStock();
   }
@@ -94,9 +84,8 @@ export class Inventory implements OnInit {
         this.loadingStock = false;
         this.cdr.detectChanges();
       },
-      error: (err) => {
+      error: () => {
         this.loadingStock = false;
-        this.showToast('error', 'Error', extractHttpErrorMessage(err) || 'Error al cargar existencias.');
         this.cdr.detectChanges();
       }
     });
@@ -112,9 +101,8 @@ export class Inventory implements OnInit {
         this.loadingMovements = false;
         this.cdr.detectChanges();
       },
-      error: (err) => {
+      error: () => {
         this.loadingMovements = false;
-        this.showToast('error', 'Error', extractHttpErrorMessage(err) || 'Error al cargar Kardex.');
         this.cdr.detectChanges();
       }
     });
@@ -130,9 +118,8 @@ export class Inventory implements OnInit {
         this.loadingLots = false;
         this.cdr.detectChanges();
       },
-      error: (err) => {
+      error: () => {
         this.loadingLots = false;
-        this.showToast('error', 'Error', extractHttpErrorMessage(err) || 'Error al cargar lotes.');
         this.cdr.detectChanges();
       }
     });
@@ -237,20 +224,5 @@ export class Inventory implements OnInit {
     } catch {
       return dateStr;
     }
-  }
-
-  showToast(type: 'success' | 'error', title: string, message: string): void {
-    if (this.toastTimeout) clearTimeout(this.toastTimeout);
-    this.toast = { show: true, type, title, message };
-    this.cdr.detectChanges();
-    this.toastTimeout = setTimeout(() => {
-      this.toast = null;
-      this.cdr.detectChanges();
-    }, 4500);
-  }
-
-  closeToast(): void {
-    if (this.toastTimeout) clearTimeout(this.toastTimeout);
-    this.toast = null;
   }
 }

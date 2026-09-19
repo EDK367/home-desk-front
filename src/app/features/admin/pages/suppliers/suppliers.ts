@@ -25,13 +25,6 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatOptionModule } from '@angular/material/core';
 
-interface ToastState {
-  show: boolean;
-  type: 'success' | 'error';
-  title: string;
-  message: string;
-}
-
 @Component({
   selector: 'app-admin-suppliers',
   standalone: true,
@@ -110,9 +103,6 @@ export class Suppliers implements OnInit {
     cost: [0, [Validators.required, Validators.min(0)]]
   });
 
-  toast: ToastState | null = null;
-  private toastTimeout: any = null;
-
   ngOnInit(): void {
     this.loadSuppliers();
     this.loadProductsList();
@@ -141,9 +131,8 @@ export class Suppliers implements OnInit {
         this.loading = false;
         this.cdr.detectChanges();
       },
-      error: (err) => {
+      error: () => {
         this.loading = false;
-        this.showToast('error', 'Error', extractHttpErrorMessage(err) || 'Error al cargar proveedores.');
         this.cdr.detectChanges();
       }
     });
@@ -302,7 +291,6 @@ export class Suppliers implements OnInit {
         next: () => {
           this.saving = false;
           this.closeModal();
-          this.showToast('success', 'Proveedor Modificado', `El proveedor ${req.name} ha sido actualizado.`);
           this.loadSuppliers();
         },
         error: (err) => {
@@ -316,7 +304,6 @@ export class Suppliers implements OnInit {
         next: () => {
           this.saving = false;
           this.closeModal();
-          this.showToast('success', 'Proveedor Creado', `El proveedor ${req.name} ha sido registrado.`);
           this.loadSuppliers();
         },
         error: (err) => {
@@ -333,12 +320,9 @@ export class Suppliers implements OnInit {
     if (confirm(`¿Está seguro de desactivar al proveedor "${s.name}"?`)) {
       this.supplierService.deleteSupplier(s.id).subscribe({
         next: () => {
-          this.showToast('success', 'Proveedor Desactivado', 'El proveedor ha sido desactivado.');
           this.loadSuppliers();
         },
-        error: (err) => {
-          this.showToast('error', 'Error', extractHttpErrorMessage(err) || 'Error al desactivar proveedor.');
-        }
+        error: () => {}
       });
     }
   }
@@ -390,12 +374,10 @@ export class Suppliers implements OnInit {
       next: () => {
         this.savingProduct = false;
         this.linkProductForm.reset({ productId: null, supplierSku: '', cost: 0 });
-        this.showToast('success', 'Producto Vinculado', 'El artículo ha sido asociado al proveedor.');
         this.loadSupplierProducts(this.selectedSupplier!.id!);
       },
-      error: (err) => {
+      error: () => {
         this.savingProduct = false;
-        this.showToast('error', 'Error', extractHttpErrorMessage(err) || 'Error al vincular producto.');
       }
     });
   }
@@ -425,14 +407,11 @@ export class Suppliers implements OnInit {
     this.supplierProductService.updateSupplierProduct(this.selectedSupplierProduct.id, req).subscribe({
       next: () => {
         this.closeEditProductModal();
-        this.showToast('success', 'Producto Actualizado', 'Costo y SKU del proveedor actualizados.');
         if (this.selectedSupplier?.id) {
           this.loadSupplierProducts(this.selectedSupplier.id);
         }
       },
-      error: (err) => {
-        this.showToast('error', 'Error', extractHttpErrorMessage(err) || 'Error al actualizar producto.');
-      }
+      error: () => {}
     });
   }
 
@@ -441,14 +420,11 @@ export class Suppliers implements OnInit {
     if (confirm('¿Desea desvincular este producto del proveedor?')) {
       this.supplierProductService.deleteSupplierProduct(sp.id).subscribe({
         next: () => {
-          this.showToast('success', 'Producto Desvinculado', 'Se retiró la asociación con el proveedor.');
           if (this.selectedSupplier?.id) {
             this.loadSupplierProducts(this.selectedSupplier.id);
           }
         },
-        error: (err) => {
-          this.showToast('error', 'Error', extractHttpErrorMessage(err) || 'Error al desvincular producto.');
-        }
+        error: () => {}
       });
     }
   }
@@ -456,20 +432,5 @@ export class Suppliers implements OnInit {
   formatMoney(amount: number | undefined): string {
     if (amount === undefined || amount === null) return 'Q0.00';
     return `Q${amount.toFixed(2)}`;
-  }
-
-  showToast(type: 'success' | 'error', title: string, message: string): void {
-    if (this.toastTimeout) clearTimeout(this.toastTimeout);
-    this.toast = { show: true, type, title, message };
-    this.cdr.detectChanges();
-    this.toastTimeout = setTimeout(() => {
-      this.toast = null;
-      this.cdr.detectChanges();
-    }, 4500);
-  }
-
-  closeToast(): void {
-    if (this.toastTimeout) clearTimeout(this.toastTimeout);
-    this.toast = null;
   }
 }

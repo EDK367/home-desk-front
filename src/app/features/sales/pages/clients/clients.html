@@ -1,17 +1,4 @@
 <div class="clients-container">
-  @if (toast) {
-    <div class="custom-toast" [class.toast-success]="toast.type === 'success'" [class.toast-error]="toast.type === 'error'">
-      <mat-icon>{{ toast.type === 'success' ? 'check_circle' : 'error' }}</mat-icon>
-      <div class="toast-text">
-        <strong>{{ toast.title }}</strong>
-        <span>{{ toast.message }}</span>
-      </div>
-      <button mat-icon-button (click)="closeToast()" class="toast-close">
-        <mat-icon>close</mat-icon>
-      </button>
-    </div>
-  
-  }
 
   <header class="page-header">
     <div class="header-titles">

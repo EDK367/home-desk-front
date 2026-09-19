@@ -26,13 +26,6 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatOptionModule } from '@angular/material/core';
 
-interface ToastState {
-  show: boolean;
-  type: 'success' | 'error';
-  title: string;
-  message: string;
-}
-
 interface ItemRow {
   productId: number | null;
   quantity: number;
@@ -105,9 +98,6 @@ export class Purchases implements OnInit {
 
   itemRows: ItemRow[] = [];
 
-  toast: ToastState | null = null;
-  private toastTimeout: any = null;
-
   ngOnInit(): void {
     this.loadCatalogData();
     this.loadPurchases();
@@ -146,9 +136,8 @@ export class Purchases implements OnInit {
         this.loading = false;
         this.cdr.detectChanges();
       },
-      error: (err) => {
+      error: () => {
         this.loading = false;
-        this.showToast('error', 'Error', extractHttpErrorMessage(err) || 'Error al cargar compras.');
         this.cdr.detectChanges();
       }
     });
@@ -330,12 +319,9 @@ export class Purchases implements OnInit {
     this.purchaseService.updatePurchaseStatus(this.selectedPurchase.id, { statusId: this.newStatusIdToApply }).subscribe({
       next: () => {
         this.closeStatusModal();
-        this.showToast('success', 'Estado Actualizado', 'El estado de la compra ha sido modificado.');
         this.loadPurchases();
       },
-      error: (err) => {
-        this.showToast('error', 'Error', extractHttpErrorMessage(err) || 'Error al cambiar estado.');
-      }
+      error: () => {}
     });
   }
 
@@ -344,12 +330,9 @@ export class Purchases implements OnInit {
     if (confirm(`¿Está seguro de cancelar la orden de compra #${p.id}?`)) {
       this.purchaseService.cancelPurchase(p.id).subscribe({
         next: () => {
-          this.showToast('success', 'Compra Cancelada', `La orden #${p.id} ha sido cancelada.`);
           this.loadPurchases();
         },
-        error: (err) => {
-          this.showToast('error', 'Error', extractHttpErrorMessage(err) || 'Error al cancelar compra.');
-        }
+        error: () => {}
       });
     }
   }
@@ -367,20 +350,5 @@ export class Purchases implements OnInit {
     } catch {
       return dateStr;
     }
-  }
-
-  showToast(type: 'success' | 'error', title: string, message: string): void {
-    if (this.toastTimeout) clearTimeout(this.toastTimeout);
-    this.toast = { show: true, type, title, message };
-    this.cdr.detectChanges();
-    this.toastTimeout = setTimeout(() => {
-      this.toast = null;
-      this.cdr.detectChanges();
-    }, 4500);
-  }
-
-  closeToast(): void {
-    if (this.toastTimeout) clearTimeout(this.toastTimeout);
-    this.toast = null;
   }
 }

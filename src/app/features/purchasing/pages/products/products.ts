@@ -19,13 +19,6 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatOptionModule } from '@angular/material/core';
 
-interface ToastState {
-  show: boolean;
-  type: 'success' | 'error';
-  title: string;
-  message: string;
-}
-
 @Component({
   selector: 'app-purchasing-products',
   standalone: true,
@@ -88,9 +81,6 @@ export class Products implements OnInit {
     minStockLevel: [5, [Validators.required, Validators.min(0)]]
   });
 
-  toast: ToastState | null = null;
-  private toastTimeout: any = null;
-
   ngOnInit(): void {
     this.loadCategories();
     this.loadLowStock();
@@ -132,9 +122,8 @@ export class Products implements OnInit {
         this.loading = false;
         this.cdr.detectChanges();
       },
-      error: (err) => {
+      error: () => {
         this.loading = false;
-        this.showToast('error', 'Error', extractHttpErrorMessage(err) || 'Error al cargar catálogo.');
         this.cdr.detectChanges();
       }
     });
@@ -300,7 +289,6 @@ export class Products implements OnInit {
         next: () => {
           this.saving = false;
           this.closeModal();
-          this.showToast('success', 'Producto Actualizado', `El producto ${req.name} ha sido actualizado.`);
           this.loadProducts();
         },
         error: (err) => {
@@ -314,7 +302,6 @@ export class Products implements OnInit {
         next: () => {
           this.saving = false;
           this.closeModal();
-          this.showToast('success', 'Producto Creado', `El producto ${req.name} ha sido creado con éxito.`);
           this.loadProducts();
         },
         error: (err) => {
@@ -329,20 +316,5 @@ export class Products implements OnInit {
   formatMoney(amount: number | undefined): string {
     if (amount === undefined || amount === null) return 'Q0.00';
     return `Q${amount.toFixed(2)}`;
-  }
-
-  showToast(type: 'success' | 'error', title: string, message: string): void {
-    if (this.toastTimeout) clearTimeout(this.toastTimeout);
-    this.toast = { show: true, type, title, message };
-    this.cdr.detectChanges();
-    this.toastTimeout = setTimeout(() => {
-      this.toast = null;
-      this.cdr.detectChanges();
-    }, 4500);
-  }
-
-  closeToast(): void {
-    if (this.toastTimeout) clearTimeout(this.toastTimeout);
-    this.toast = null;
   }
 }

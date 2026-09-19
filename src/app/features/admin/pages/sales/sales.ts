@@ -30,13 +30,6 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatOptionModule } from '@angular/material/core';
 
-interface ToastState {
-  show: boolean;
-  type: 'success' | 'error';
-  title: string;
-  message: string;
-}
-
 interface SaleItemRow {
   productId: number | null;
   quantity: number;
@@ -118,9 +111,6 @@ export class Sales implements OnInit {
 
   itemRows: SaleItemRow[] = [];
 
-  toast: ToastState | null = null;
-  private toastTimeout: any = null;
-
   ngOnInit(): void {
     this.loadCatalogData();
     this.loadSales();
@@ -165,9 +155,8 @@ export class Sales implements OnInit {
         this.loading = false;
         this.cdr.detectChanges();
       },
-      error: (err) => {
+      error: () => {
         this.loading = false;
-        this.showToast('error', 'Error', extractHttpErrorMessage(err) || 'Error al cargar ventas.');
         this.cdr.detectChanges();
       }
     });
@@ -353,12 +342,9 @@ export class Sales implements OnInit {
     this.saleService.updateSaleStatus(this.selectedSale.id, { statusId: this.newStatusIdToApply }).subscribe({
       next: () => {
         this.closeStatusModal();
-        this.showToast('success', 'Estado Actualizado', 'El estado de la venta ha sido actualizado.');
         this.loadSales();
       },
-      error: (err) => {
-        this.showToast('error', 'Error', extractHttpErrorMessage(err) || 'Error al actualizar estado.');
-      }
+      error: () => {}
     });
   }
 
@@ -367,12 +353,9 @@ export class Sales implements OnInit {
     if (confirm(`¿Está seguro de cancelar la venta ${s.invoiceNumber || '#' + s.id}?`)) {
       this.saleService.cancelSale(s.id).subscribe({
         next: () => {
-          this.showToast('success', 'Venta Cancelada', 'La transacción ha sido cancelada.');
           this.loadSales();
         },
-        error: (err) => {
-          this.showToast('error', 'Error', extractHttpErrorMessage(err) || 'Error al cancelar la venta.');
-        }
+        error: () => {}
       });
     }
   }
@@ -383,7 +366,6 @@ export class Sales implements OnInit {
       next: (res) => {
         s.items = res?.data || [];
         this.invoicePdfService.generateInvoicePdf(s, true);
-        this.showToast('success', 'PDF Generado', 'Factura descargada exitosamente.');
       },
       error: () => {
         this.invoicePdfService.generateInvoicePdf(s, true);
@@ -404,20 +386,5 @@ export class Sales implements OnInit {
     } catch {
       return dateStr;
     }
-  }
-
-  showToast(type: 'success' | 'error', title: string, message: string): void {
-    if (this.toastTimeout) clearTimeout(this.toastTimeout);
-    this.toast = { show: true, type, title, message };
-    this.cdr.detectChanges();
-    this.toastTimeout = setTimeout(() => {
-      this.toast = null;
-      this.cdr.detectChanges();
-    }, 4500);
-  }
-
-  closeToast(): void {
-    if (this.toastTimeout) clearTimeout(this.toastTimeout);
-    this.toast = null;
   }
 }

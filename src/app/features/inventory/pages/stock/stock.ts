@@ -23,13 +23,6 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatOptionModule } from '@angular/material/core';
 import { MatRadioModule } from '@angular/material/radio';
 
-interface ToastState {
-  show: boolean;
-  type: 'success' | 'error';
-  title: string;
-  message: string;
-}
-
 @Component({
   selector: 'app-inventory-stock',
   standalone: true,
@@ -96,9 +89,6 @@ export class Stock implements OnInit, OnDestroy {
     notes: ['', [Validators.required, Validators.maxLength(255)]]
   });
 
-  toast: ToastState | null = null;
-  private toastTimeout: any = null;
-
   ngOnInit(): void {
     this.loadCatalogData();
     this.loadStock();
@@ -129,7 +119,6 @@ export class Stock implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.routerSub?.unsubscribe();
-    if (this.toastTimeout) clearTimeout(this.toastTimeout);
   }
 
   loadCatalogData(): void {
@@ -355,11 +344,9 @@ export class Stock implements OnInit, OnDestroy {
     this.modalError = null;
 
     this.inventoryService.adjustInventoryStock(productId, payload).subscribe({
-      next: (res) => {
+      next: () => {
         this.savingAdjustment = false;
         this.closeAdjustModal();
-        const actionText = signedQty > 0 ? `ingreso de +${rawQty}` : `egreso de -${rawQty}`;
-        this.showToast('success', 'Ajuste Registrado', `Se aplicó el ${actionText} unidades al producto con éxito.`);
         this.loadStock();
       },
       error: (err) => {
@@ -395,19 +382,6 @@ export class Stock implements OnInit, OnDestroy {
     this.isLotsModalOpen = false;
     this.selectedInventory = null;
     this.activeLots = [];
-  }
-
-  showToast(type: 'success' | 'error', title: string, message: string): void {
-    if (this.toastTimeout) clearTimeout(this.toastTimeout);
-    this.toast = { show: true, type, title, message };
-    this.toastTimeout = setTimeout(() => this.closeToast(), 4500);
-  }
-
-  closeToast(): void {
-    if (this.toast) {
-      this.toast.show = false;
-      this.toast = null;
-    }
   }
 
   formatDate(isoDate?: string): string {

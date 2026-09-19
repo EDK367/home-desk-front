@@ -24,13 +24,6 @@ import { MatOptionModule } from '@angular/material/core';
 import { MatRadioModule } from '@angular/material/radio';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 
-interface ToastState {
-  show: boolean;
-  type: 'success' | 'error';
-  title: string;
-  message: string;
-}
-
 @Component({
   selector: 'app-admin-stock',
   standalone: true,
@@ -98,9 +91,6 @@ export class AdminStock implements OnInit, OnDestroy {
     notes: ['', [Validators.required, Validators.maxLength(255)]]
   });
 
-  toast: ToastState | null = null;
-  private toastTimeout: any = null;
-
   ngOnInit(): void {
     this.loadCatalogData();
     this.loadStock();
@@ -131,7 +121,6 @@ export class AdminStock implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.routerSub?.unsubscribe();
-    if (this.toastTimeout) clearTimeout(this.toastTimeout);
   }
 
   loadCatalogData(): void {
@@ -200,7 +189,6 @@ export class AdminStock implements OnInit, OnDestroy {
     this.totalElements = 0;
     this.totalPages = 1;
     this.loading = false;
-    this.showToast('error', 'Error al cargar existencias', extractHttpErrorMessage(err) || 'No se pudo obtener el inventario.');
     this.cdr.detectChanges();
   }
 
@@ -309,7 +297,6 @@ export class AdminStock implements OnInit, OnDestroy {
       next: () => {
         this.savingAdjustment = false;
         this.closeAdjustModal();
-        this.showToast('success', 'Ajuste completado', `Se aplicó el ajuste de ${adjustmentType} exitosamente.`);
         this.loadStock();
       },
       error: (err) => {
@@ -348,19 +335,5 @@ export class AdminStock implements OnInit, OnDestroy {
     this.isLotsModalOpen = false;
     this.selectedInventory = null;
     this.activeLots = [];
-  }
-
-  showToast(type: 'success' | 'error', title: string, message: string): void {
-    if (this.toastTimeout) clearTimeout(this.toastTimeout);
-    this.toast = { show: true, type, title, message };
-    this.toastTimeout = setTimeout(() => {
-      this.toast = null;
-      this.cdr.detectChanges();
-    }, 4000);
-  }
-
-  closeToast(): void {
-    if (this.toastTimeout) clearTimeout(this.toastTimeout);
-    this.toast = null;
   }
 }

@@ -6,13 +6,19 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+
 import { SessionService } from '../../../core/services/session';
 import { PurchaseService } from '../../../core/services/purchase';
 import { SupplierService } from '../../../core/services/supplier';
-import { InventoryService } from '../../../core/services/inventory';
+import { ReportService } from '../../../core/services/report';
 import { UserSummaryResponse } from '../../../core/models/auth';
 import { PurchaseResponse } from '../../../core/models/purchase';
-import { InventoryResponse } from '../../../core/models/inventory';
+import {
+  VwTop5SuppliersByPurchase,
+  VwProductsMostFrequentlyPurchased,
+  VwProductsLowestStock,
+  VwTop10ProductsSold
+} from '../../../core/models/views';
 
 @Component({
   selector: 'app-purchasing-dashboard',
@@ -33,7 +39,7 @@ export class Dashboard implements OnInit {
   private sessionService = inject(SessionService);
   private purchaseService = inject(PurchaseService);
   private supplierService = inject(SupplierService);
-  private inventoryService = inject(InventoryService);
+  private reportService = inject(ReportService);
   private cdr = inject(ChangeDetectorRef);
 
   user: UserSummaryResponse | null = null;
@@ -44,20 +50,29 @@ export class Dashboard implements OnInit {
 
   loadingStats = true;
   loadingRecent = true;
-  loadingAlerts = true;
+
+  // Reportes específicos para el rol de Compras
+  topSuppliersPurchases: VwTop5SuppliersByPurchase[] = [];
+  mostFrequentlyPurchased: VwProductsMostFrequentlyPurchased[] = [];
+  lowestStockProducts: VwProductsLowestStock[] = [];
+  topProductsSold: VwTop10ProductsSold[] = [];
+
+  loadingTopSuppliers = true;
+  loadingFrequentPurchased = true;
+  loadingLowestStock = true;
+  loadingTopProducts = true;
 
   recentPurchases: PurchaseResponse[] = [];
-  lowStockItems: InventoryResponse[] = [];
 
   ngOnInit(): void {
     this.user = this.sessionService.getUser();
     this.loadDashboardData();
+    this.loadReportsData();
   }
 
   loadDashboardData(): void {
     this.loadingStats = true;
     this.loadingRecent = true;
-    this.loadingAlerts = true;
 
     this.purchaseService.getPurchases(0, 5, 'purchaseDate', 'DESC').subscribe({
       next: (res) => {
@@ -88,19 +103,65 @@ export class Dashboard implements OnInit {
         this.checkStatsLoaded();
       }
     });
+  }
 
-    this.inventoryService.getLowStock(0, 5, 'quantityOnHand', 'ASC').subscribe({
+  loadReportsData(): void {
+    // 1. Top 5 Proveedores con mayor compra
+    this.loadingTopSuppliers = true;
+    this.reportService.getTop5SuppliersPurchases().subscribe({
       next: (res) => {
-        if (res?.data) {
-          this.lowStockCount = res.data.totalElements ?? 0;
-          this.lowStockItems = res.data.content || [];
-        }
-        this.loadingAlerts = false;
-        this.checkStatsLoaded();
+        this.topSuppliersPurchases = res.data || [];
+        this.loadingTopSuppliers = false;
+        this.cdr.detectChanges();
       },
       error: () => {
-        this.loadingAlerts = false;
-        this.checkStatsLoaded();
+        this.loadingTopSuppliers = false;
+        this.cdr.detectChanges();
+      }
+    });
+
+    // 2. Productos adquiridos con mayor frecuencia
+    this.loadingFrequentPurchased = true;
+    this.reportService.getProductsMostFrequentlyPurchased(0, 5).subscribe({
+      next: (res) => {
+        this.mostFrequentlyPurchased = res.data?.content || [];
+        this.loadingFrequentPurchased = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.loadingFrequentPurchased = false;
+        this.cdr.detectChanges();
+      }
+    });
+
+    // 3. Productos con menor stock
+    this.loadingLowestStock = true;
+    this.reportService.getProductsLowestStock(0, 6).subscribe({
+      next: (res) => {
+        if (res?.data) {
+          this.lowestStockProducts = res.data.content || [];
+          this.lowStockCount = res.data.totalElements ?? this.lowestStockProducts.length;
+        }
+        this.loadingLowestStock = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.loadingLowestStock = false;
+        this.cdr.detectChanges();
+      }
+    });
+
+    // 4. Top productos más vendidos (apoyo para compras preventivas)
+    this.loadingTopProducts = true;
+    this.reportService.getTop10ProductsSold().subscribe({
+      next: (res) => {
+        this.topProductsSold = (res.data || []).slice(0, 5);
+        this.loadingTopProducts = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.loadingTopProducts = false;
+        this.cdr.detectChanges();
       }
     });
   }

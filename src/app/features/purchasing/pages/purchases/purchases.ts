@@ -8,6 +8,7 @@ import { PurchaseService } from '../../../../core/services/purchase';
 import { SupplierService } from '../../../../core/services/supplier';
 import { ProductService } from '../../../../core/services/product';
 import { SupplierProductService } from '../../../../core/services/supplier-product';
+import { NotificationService } from '../../../../core/services/notification';
 import { extractHttpErrorMessage } from '../../../../core/interceptors/error.interceptor';
 import {
   PurchaseResponse,
@@ -28,13 +29,6 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatOptionModule } from '@angular/material/core';
-
-interface ToastState {
-  show: boolean;
-  type: 'success' | 'error';
-  title: string;
-  message: string;
-}
 
 interface PurchaseItemRow {
   productId: number | null;
@@ -72,6 +66,7 @@ export class Purchases implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private cdr = inject(ChangeDetectorRef);
+  private notificationService = inject(NotificationService);
 
   private routerSub: Subscription | null = null;
 
@@ -117,9 +112,6 @@ export class Purchases implements OnInit, OnDestroy {
 
   itemRows: PurchaseItemRow[] = [];
 
-  toast: ToastState | null = null;
-  private toastTimeout: any = null;
-
   ngOnInit(): void {
     this.loadCatalogData();
     this.loadPurchases();
@@ -156,7 +148,6 @@ export class Purchases implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.routerSub?.unsubscribe();
-    if (this.toastTimeout) clearTimeout(this.toastTimeout);
   }
 
   loadCatalogData(): void {
@@ -428,7 +419,7 @@ export class Purchases implements OnInit, OnDestroy {
     if (this.itemRows.length > 1) {
       this.itemRows.splice(index, 1);
     } else {
-      this.showToast('error', 'Validación', 'La compra debe tener al menos un producto.');
+      this.notificationService.showError('La compra debe tener al menos un producto.', 'Validación');
     }
   }
 
@@ -535,10 +526,9 @@ export class Purchases implements OnInit, OnDestroy {
     this.modalError = null;
 
     this.purchaseService.createPurchase(payload).subscribe({
-      next: (res) => {
+      next: () => {
         this.saving = false;
         this.closeCreateModal();
-        this.showToast('success', 'Compra Registrada', `La orden de compra #${res.data?.id || ''} fue creada exitosamente.`);
         this.currentPage = 1;
         this.loadPurchases();
       },
@@ -603,7 +593,7 @@ export class Purchases implements OnInit, OnDestroy {
 
   openStatusModal(purchase: PurchaseResponse): void {
     if (purchase.status?.name === 'CANCELADA') {
-      this.showToast('error', 'Acción no permitida', 'No se puede modificar el estado de una orden cancelada.');
+      this.notificationService.showError('No se puede modificar el estado de una orden cancelada.', 'Acción no permitida');
       return;
     }
     this.selectedPurchase = purchase;
@@ -636,8 +626,6 @@ export class Purchases implements OnInit, OnDestroy {
     this.purchaseService.updatePurchaseStatus(this.selectedPurchase.id, { statusId: this.newStatusIdToApply }).subscribe({
       next: (res) => {
         this.statusUpdating = false;
-        const updatedStatus = res.data?.status?.name || 'actualizado';
-        this.showToast('success', 'Estado Actualizado', `La orden #${this.selectedPurchase?.id} ahora está en estado: ${updatedStatus}.`);
         this.closeStatusModal();
         if (this.isDetailModalOpen && res.data) {
           this.selectedPurchase = res.data;
@@ -656,7 +644,7 @@ export class Purchases implements OnInit, OnDestroy {
     if (!purchase.id) return;
 
     if (purchase.status?.name === 'CANCELADA') {
-      this.showToast('error', 'Aviso', 'Esta compra ya se encuentra cancelada.');
+      this.notificationService.showError('Esta compra ya se encuentra cancelada.', 'Aviso');
       return;
     }
 
@@ -665,30 +653,13 @@ export class Purchases implements OnInit, OnDestroy {
     if (confirm(confirmMsg)) {
       this.purchaseService.cancelPurchase(purchase.id).subscribe({
         next: () => {
-          this.showToast('success', 'Compra Anulada', `La orden #${purchase.id} ha sido cancelada satisfactoriamente.`);
           if (this.isDetailModalOpen) {
             this.closeDetailModal();
           }
           this.loadPurchases();
         },
-        error: (err) => {
-          const msg = extractHttpErrorMessage(err);
-          this.showToast('error', 'No se pudo cancelar', msg);
-        }
+        error: () => {}
       });
-    }
-  }
-
-  showToast(type: 'success' | 'error', title: string, message: string): void {
-    if (this.toastTimeout) clearTimeout(this.toastTimeout);
-    this.toast = { show: true, type, title, message };
-    this.toastTimeout = setTimeout(() => this.closeToast(), 4500);
-  }
-
-  closeToast(): void {
-    if (this.toast) {
-      this.toast.show = false;
-      this.toast = null;
     }
   }
 

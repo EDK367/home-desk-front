@@ -20,13 +20,6 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatOptionModule } from '@angular/material/core';
 
-interface ToastState {
-  show: boolean;
-  type: 'success' | 'error';
-  title: string;
-  message: string;
-}
-
 @Component({
   selector: 'app-inventory-products',
   standalone: true,
@@ -88,9 +81,6 @@ export class Products implements OnInit, OnDestroy {
     minStockLevel: [1, [Validators.required, Validators.min(0)]]
   });
 
-  toast: ToastState | null = null;
-  private toastTimeout: any = null;
-
   ngOnInit(): void {
     this.loadCategories();
     this.loadProducts();
@@ -114,7 +104,6 @@ export class Products implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.routerSub?.unsubscribe();
-    if (this.toastTimeout) clearTimeout(this.toastTimeout);
   }
 
   loadCategories(): void {
@@ -255,9 +244,8 @@ export class Products implements OnInit, OnDestroy {
     this.modalError = null;
 
     this.productService.changeSalePrice(this.selectedProduct.id, { salePrice: newPrice }).subscribe({
-      next: (res) => {
+      next: () => {
         this.saving = false;
-        this.showToast('success', 'Precio Actualizado', `El precio de venta se actualizó a ${this.formatCurrency(newPrice)}.`);
         this.closePriceModal();
         this.loadProducts();
       },
@@ -297,7 +285,6 @@ export class Products implements OnInit, OnDestroy {
     this.productService.changeMinStock(this.selectedProduct.id, { minStockLevel: newMinStock }).subscribe({
       next: () => {
         this.saving = false;
-        this.showToast('success', 'Stock Mínimo Actualizado', `El nivel mínimo de stock se ajustó a ${newMinStock} unidades.`);
         this.closeMinStockModal();
         this.loadProducts();
       },
@@ -307,19 +294,6 @@ export class Products implements OnInit, OnDestroy {
         this.cdr.detectChanges();
       }
     });
-  }
-
-  showToast(type: 'success' | 'error', title: string, message: string): void {
-    if (this.toastTimeout) clearTimeout(this.toastTimeout);
-    this.toast = { show: true, type, title, message };
-    this.toastTimeout = setTimeout(() => this.closeToast(), 4500);
-  }
-
-  closeToast(): void {
-    if (this.toast) {
-      this.toast.show = false;
-      this.toast = null;
-    }
   }
 
   formatCurrency(value?: number): string {

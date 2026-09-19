@@ -16,15 +16,9 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { UserService } from '../../../../core/services/user';
 import { RoleService } from '../../../../core/services/role';
 import { extractHttpErrorMessage } from '../../../../core/interceptors/error.interceptor';
+import { NotificationService } from '../../../../core/services/notification';
 import { UserResponse, UserRequest } from '../../../../core/models/user';
 import { RoleResponse } from '../../../../core/models/role';
-
-interface ToastState {
-  show: boolean;
-  type: 'success' | 'error';
-  title: string;
-  message: string;
-}
 
 @Component({
   selector: 'app-users',
@@ -54,6 +48,7 @@ export class Users implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private cdr = inject(ChangeDetectorRef);
+  private notificationService = inject(NotificationService);
 
   private routerSub: Subscription | null = null;
 
@@ -91,9 +86,6 @@ export class Users implements OnInit, OnDestroy {
     password: ['', [Validators.minLength(6), Validators.maxLength(100)]],
     roleId: [null, [Validators.required]]
   });
-
-  toast: ToastState | null = null;
-  private toastTimeout: any = null;
 
 
   // carga de usuarios y paramatros
@@ -404,7 +396,6 @@ export class Users implements OnInit, OnDestroy {
             this.applyFilter();
           }
           this.closeModal();
-          this.showToast('success', 'Éxito', 'Usuario actualizado correctamente');
           this.loadUsers();
         },
         error: (err) => {
@@ -417,7 +408,7 @@ export class Users implements OnInit, OnDestroy {
     } else {
       if (!payload.password) {
         this.saving = false;
-        this.showToast('error', 'Validación', 'La contraseña es requerida para nuevos usuarios');
+        this.notificationService.showError('La contraseña es requerida para nuevos usuarios', 'Validación');
         return;
       }
 
@@ -430,7 +421,6 @@ export class Users implements OnInit, OnDestroy {
             this.applyFilter();
           }
           this.closeModal();
-          this.showToast('success', 'Éxito', 'Usuario creado correctamente');
           this.currentPage = 1;
           this.loadUsers();
         },
@@ -454,13 +444,9 @@ export class Users implements OnInit, OnDestroy {
           next: () => {
             user.isActive = false;
             this.applyFilter();
-            this.showToast('success', 'Éxito', `Usuario ${user.fullName} desactivado correctamente`);
             this.loadUsers();
           },
-          error: (err) => {
-            const msg = extractHttpErrorMessage(err);
-            this.showToast('error', 'Error al desactivar', msg);
-          }
+          error: () => {}
         });
       }
     } else {
@@ -474,32 +460,10 @@ export class Users implements OnInit, OnDestroy {
         next: () => {
           user.isActive = true;
           this.applyFilter();
-          this.showToast('success', 'Éxito', `Usuario ${user.fullName} reactivado correctamente`);
           this.loadUsers();
         },
-        error: (err) => {
-          const msg = extractHttpErrorMessage(err);
-          this.showToast('error', 'Error al reactivar', msg);
-        }
+        error: () => {}
       });
-    }
-  }
-
-  // mensajes
-  showToast(type: 'success' | 'error', title: string, message: string): void {
-    if (this.toastTimeout) {
-      clearTimeout(this.toastTimeout);
-    }
-    this.toast = { show: true, type, title, message };
-    this.toastTimeout = setTimeout(() => {
-      this.closeToast();
-    }, 4500);
-  }
-
-  closeToast(): void {
-    if (this.toast) {
-      this.toast.show = false;
-      this.toast = null;
     }
   }
 

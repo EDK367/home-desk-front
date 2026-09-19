@@ -1,18 +1,4 @@
 <div class="p-6 w-full flex flex-col gap-6">
-  @if (toast) {
-    <div class="fixed top-6 right-6 z-50 flex items-center gap-3 p-4 bg-white rounded-lg shadow-lg border-l-4" [class.border-emerald-600]="toast.type === 'success'" [class.border-red-600]="toast.type === 'error'">
-      <mat-icon [class.text-emerald-600]="toast.type === 'success'" [class.text-red-600]="toast.type === 'error'">
-        {{ toast.type === 'success' ? 'check_circle' : 'error' }}
-      </mat-icon>
-      <div class="flex flex-col text-sm">
-        <strong class="font-semibold text-gray-900">{{ toast.title }}</strong>
-        <span class="text-gray-600">{{ toast.message }}</span>
-      </div>
-      <button mat-icon-button (click)="closeToast()">
-        <mat-icon>close</mat-icon>
-      </button>
-    </div>
-  }
 
   <header class="flex justify-between items-center flex-wrap gap-4">
     <div>

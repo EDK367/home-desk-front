@@ -18,13 +18,6 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatOptionModule } from '@angular/material/core';
 
-interface ToastState {
-  show: boolean;
-  type: 'success' | 'error';
-  title: string;
-  message: string;
-}
-
 @Component({
   selector: 'app-admin-products',
   standalone: true,
@@ -93,9 +86,6 @@ export class Products implements OnInit {
     minStockLevel: [5, [Validators.required, Validators.min(0)]]
   });
 
-  toast: ToastState | null = null;
-  private toastTimeout: any = null;
-
   ngOnInit(): void {
     this.loadCategories();
     this.loadProducts();
@@ -124,9 +114,8 @@ export class Products implements OnInit {
         this.loading = false;
         this.cdr.detectChanges();
       },
-      error: (err) => {
+      error: () => {
         this.loading = false;
-        this.showToast('error', 'Error', extractHttpErrorMessage(err) || 'Error al cargar productos.');
         this.cdr.detectChanges();
       }
     });
@@ -301,7 +290,6 @@ export class Products implements OnInit {
         next: () => {
           this.saving = false;
           this.closeModal();
-          this.showToast('success', 'Producto Actualizado', `El producto ${req.name} ha sido modificado.`);
           this.loadProducts();
         },
         error: (err) => {
@@ -315,7 +303,6 @@ export class Products implements OnInit {
         next: () => {
           this.saving = false;
           this.closeModal();
-          this.showToast('success', 'Producto Creado', `El producto ${req.name} fue registrado.`);
           this.loadProducts();
         },
         error: (err) => {
@@ -333,12 +320,9 @@ export class Products implements OnInit {
     this.productService.updateStatus(p.id, newStatus).subscribe({
       next: () => {
         p.isActive = newStatus;
-        this.showToast('success', 'Estado Cambiado', `El producto ahora está ${newStatus ? 'Activo' : 'Inactivo'}.`);
         this.cdr.detectChanges();
       },
-      error: (err) => {
-        this.showToast('error', 'Error', extractHttpErrorMessage(err) || 'No se pudo cambiar el estado.');
-      }
+      error: () => {}
     });
   }
 
@@ -358,12 +342,9 @@ export class Products implements OnInit {
     this.productService.changeSalePrice(this.selectedProductForPrice.id, { salePrice: this.newPriceValue }).subscribe({
       next: () => {
         this.closePriceModal();
-        this.showToast('success', 'Precio Actualizado', 'El precio comercial ha sido modificado.');
         this.loadProducts();
       },
-      error: (err) => {
-        this.showToast('error', 'Error', extractHttpErrorMessage(err) || 'Error al modificar precio.');
-      }
+      error: () => {}
     });
   }
 
@@ -383,12 +364,9 @@ export class Products implements OnInit {
     this.productService.changeMinStock(this.selectedProductForMinStock.id, { minStockLevel: this.newMinStockValue }).subscribe({
       next: () => {
         this.closeMinStockModal();
-        this.showToast('success', 'Stock Mínimo Actualizado', 'El nivel mínimo de reposición ha sido modificado.');
         this.loadProducts();
       },
-      error: (err) => {
-        this.showToast('error', 'Error', extractHttpErrorMessage(err) || 'Error al modificar stock mínimo.');
-      }
+      error: () => {}
     });
   }
 
@@ -397,12 +375,9 @@ export class Products implements OnInit {
     if (confirm(`¿Está seguro de desactivar el producto "${p.name}"?`)) {
       this.productService.deleteProduct(p.id).subscribe({
         next: () => {
-          this.showToast('success', 'Producto Eliminado', 'El producto ha sido desactivado del catálogo.');
           this.loadProducts();
         },
-        error: (err) => {
-          this.showToast('error', 'Error', extractHttpErrorMessage(err) || 'Error al desactivar producto.');
-        }
+        error: () => {}
       });
     }
   }
@@ -410,20 +385,5 @@ export class Products implements OnInit {
   formatMoney(amount: number | undefined): string {
     if (amount === undefined || amount === null) return 'Q0.00';
     return `Q${amount.toFixed(2)}`;
-  }
-
-  showToast(type: 'success' | 'error', title: string, message: string): void {
-    if (this.toastTimeout) clearTimeout(this.toastTimeout);
-    this.toast = { show: true, type, title, message };
-    this.cdr.detectChanges();
-    this.toastTimeout = setTimeout(() => {
-      this.toast = null;
-      this.cdr.detectChanges();
-    }, 4500);
-  }
-
-  closeToast(): void {
-    if (this.toastTimeout) clearTimeout(this.toastTimeout);
-    this.toast = null;
   }
 }

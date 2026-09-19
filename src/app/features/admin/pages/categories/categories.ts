@@ -15,13 +15,6 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 
-interface ToastState {
-  show: boolean;
-  type: 'success' | 'error';
-  title: string;
-  message: string;
-}
-
 @Component({
   selector: 'app-admin-categories',
   standalone: true,
@@ -73,9 +66,6 @@ export class Categories implements OnInit {
     description: ['']
   });
 
-  toast: ToastState | null = null;
-  private toastTimeout: any = null;
-
   ngOnInit(): void {
     this.loadCategories();
   }
@@ -106,9 +96,8 @@ export class Categories implements OnInit {
             this.loading = false;
             this.cdr.detectChanges();
           },
-          error: (err) => {
+          error: () => {
             this.loading = false;
-            this.showToast('error', 'Error', extractHttpErrorMessage(err) || 'Error al cargar categorías.');
             this.cdr.detectChanges();
           }
         });
@@ -245,7 +234,6 @@ export class Categories implements OnInit {
         next: () => {
           this.saving = false;
           this.closeModal();
-          this.showToast('success', 'Categoría Modificada', `La categoría ${req.name} ha sido actualizada.`);
           this.loadCategories();
         },
         error: (err) => {
@@ -259,7 +247,6 @@ export class Categories implements OnInit {
         next: () => {
           this.saving = false;
           this.closeModal();
-          this.showToast('success', 'Categoría Creada', `La categoría ${req.name} ha sido creada con éxito.`);
           this.loadCategories();
         },
         error: (err) => {
@@ -276,28 +263,10 @@ export class Categories implements OnInit {
     if (confirm(`¿Está seguro de eliminar o desactivar la categoría "${c.name}"?`)) {
       this.categoryService.deleteCategory(c.id).subscribe({
         next: () => {
-          this.showToast('success', 'Categoría Eliminada', 'La categoría ha sido eliminada.');
           this.loadCategories();
         },
-        error: (err) => {
-          this.showToast('error', 'Error', extractHttpErrorMessage(err) || 'No se pudo eliminar la categoría.');
-        }
+        error: () => {}
       });
     }
-  }
-
-  showToast(type: 'success' | 'error', title: string, message: string): void {
-    if (this.toastTimeout) clearTimeout(this.toastTimeout);
-    this.toast = { show: true, type, title, message };
-    this.cdr.detectChanges();
-    this.toastTimeout = setTimeout(() => {
-      this.toast = null;
-      this.cdr.detectChanges();
-    }, 4500);
-  }
-
-  closeToast(): void {
-    if (this.toastTimeout) clearTimeout(this.toastTimeout);
-    this.toast = null;
   }
 }

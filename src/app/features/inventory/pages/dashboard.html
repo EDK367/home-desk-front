@@ -19,34 +19,7 @@
     </mat-card-content>
   </mat-card>
 
-  <section class="stats-grid">
-    <mat-card class="stat-card" appearance="outlined" [class.stat-warning]="lowStockCount > 0">
-      <mat-card-content class="stat-content">
-        <div class="stat-icon icon-alerts">
-          <mat-icon color="warn">warning</mat-icon>
-        </div>
-        <div class="stat-info">
-          <span class="stat-label">Alertas de Stock Bajo</span>
-          <strong class="stat-value">{{ loadingStats ? '...' : lowStockCount }}</strong>
-          <span class="stat-hint">Existencias en nivel crítico</span>
-        </div>
-      </mat-card-content>
-    </mat-card>
-
-    <mat-card class="stat-card" appearance="outlined">
-      <mat-card-content class="stat-content">
-        <div class="stat-icon icon-movements">
-          <mat-icon>swap_vert</mat-icon>
-        </div>
-        <div class="stat-info">
-          <span class="stat-label">Movimientos Registrados</span>
-          <strong class="stat-value">{{ loadingStats ? '...' : totalMovements }}</strong>
-          <span class="stat-hint">Transacciones en Kardex</span>
-        </div>
-      </mat-card-content>
-    </mat-card>
-  </section>
-
+  <!-- Accesos Directos -->
   <section class="shortcuts-section">
     <h3 class="section-heading">Accesos Directos del Módulo</h3>
     <div class="shortcuts-grid">
@@ -86,5 +59,133 @@
         </mat-card-content>
       </mat-card>
     </div>
+  </section>
+
+  <!-- KPI Stats -->
+  <section class="stats-grid">
+    <mat-card class="stat-card" appearance="outlined">
+      <mat-card-content class="stat-content">
+        <div class="stat-icon icon-products">
+          <mat-icon>category</mat-icon>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Catálogo de Productos</span>
+          <strong class="stat-value">{{ loadingStats ? '...' : totalProducts }}</strong>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="stat-card" appearance="outlined">
+      <mat-card-content class="stat-content">
+        <div class="stat-icon icon-alerts">
+          <mat-icon color="warn">warning</mat-icon>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Alertas de Stock Bajo</span>
+          <strong class="stat-value">{{ loadingLowestStock ? '...' : lowStockCount }}</strong>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="stat-card" appearance="outlined">
+      <mat-card-content class="stat-content">
+        <div class="stat-icon icon-movements">
+          <mat-icon>swap_vert</mat-icon>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Movimientos Registrados</span>
+          <strong class="stat-value">{{ loadingStats ? '...' : totalMovements }}</strong>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </section>
+
+  <!-- Reportes del Módulo de Inventario -->
+  <section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+    <!-- Reporte 1: Productos con Menor Stock Disponible (sin acciones) -->
+    <mat-card class="section-card" appearance="outlined">
+      <div class="section-card-header">
+        <h3>Productos con Menor Existencia</h3>
+      </div>
+
+      @if (loadingLowestStock) {
+        <div class="loading-state">
+          <mat-spinner diameter="32"></mat-spinner>
+          <p>Cargando datos...</p>
+        </div>
+      } @else if (lowestStockProducts.length === 0) {
+        <div class="empty-state">
+          <p>No se encontraron datos</p>
+        </div>
+      } @else {
+        <div class="table-responsive">
+          <table class="compact-table">
+            <thead>
+              <tr>
+                <th>Producto</th>
+                <th>SKU</th>
+                <th>Categoría</th>
+                <th class="text-center">Existencia</th>
+                <th class="text-center">Mínimo</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (item of lowestStockProducts; track item.productId) {
+                <tr>
+                  <td>{{ item.product }}</td>
+                  <td>{{ item.sku || '—' }}</td>
+                  <td>{{ item.category || 'General' }}</td>
+                  <td class="text-center">{{ item.quantityOnHand ?? 0 }}</td>
+                  <td class="text-center">{{ item.minStockLevel ?? 0 }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </mat-card>
+
+    <!-- Reporte 2: Mayor Movimiento en Inventario -->
+    <mat-card class="section-card" appearance="outlined">
+      <div class="section-card-header">
+        <h3>Mayor Rotación en Kardex</h3>
+      </div>
+
+      @if (loadingMostMovements) {
+        <div class="loading-state">
+          <mat-spinner diameter="32"></mat-spinner>
+          <p>Cargando datos...</p>
+        </div>
+      } @else if (mostInventoryMovements.length === 0) {
+        <div class="empty-state">
+          <p>No se encontraron datos</p>
+        </div>
+      } @else {
+        <div class="table-responsive">
+          <table class="compact-table">
+            <thead>
+              <tr>
+                <th>Producto</th>
+                <th>SKU</th>
+                <th>Categoría</th>
+                <th class="text-center">Movimientos</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (m of mostInventoryMovements; track m.productId) {
+                <tr>
+                  <td>{{ m.product }}</td>
+                  <td>{{ m.sku || '—' }}</td>
+                  <td>{{ m.category || 'General' }}</td>
+                  <td class="text-center">{{ m.movementCount }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </mat-card>
+
   </section>
 </div>

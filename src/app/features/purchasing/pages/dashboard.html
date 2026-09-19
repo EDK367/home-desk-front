@@ -19,33 +19,7 @@
     </mat-card-content>
   </mat-card>
 
-  <section class="stats-grid">
-    <mat-card class="stat-card" appearance="outlined">
-      <mat-card-content class="stat-content">
-        <div class="stat-icon icon-suppliers">
-          <mat-icon>local_shipping</mat-icon>
-        </div>
-        <div class="stat-info">
-          <span class="stat-label">Proveedores Activos</span>
-          <strong class="stat-value">{{ loadingStats ? '...' : totalSuppliers }}</strong>
-          <span class="stat-hint">Compañías registradas</span>
-        </div>
-      </mat-card-content>
-    </mat-card>
-
-    <mat-card class="stat-card" appearance="outlined" [class.stat-warning]="lowStockCount > 0">
-      <mat-card-content class="stat-content">
-        <div class="stat-icon icon-alerts">
-          <mat-icon color="warn">warning</mat-icon>
-        </div>
-        <div class="stat-info">
-          <span class="stat-label">Alertas de Stock Bajo</span>
-          <strong class="stat-value">{{ loadingStats ? '...' : lowStockCount }}</strong>
-          <span class="stat-hint">Productos que requieren reposición</span>
-        </div>
-      </mat-card-content>
-    </mat-card>
-  </section>
+  <!-- Accesos Directos -->
   <section class="shortcuts-section">
     <h3 class="section-heading">Accesos Directos del Módulo</h3>
     <div class="shortcuts-grid">
@@ -87,60 +61,214 @@
     </div>
   </section>
 
+  <!-- KPI Stats -->
+  <section class="stats-grid">
+    <mat-card class="stat-card" appearance="outlined">
+      <mat-card-content class="stat-content">
+        <div class="stat-icon icon-suppliers">
+          <mat-icon>local_shipping</mat-icon>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Proveedores Registrados</span>
+          <strong class="stat-value">{{ loadingStats ? '...' : totalSuppliers }}</strong>
+        </div>
+      </mat-card-content>
+    </mat-card>
 
-  @if (lowStockItems.length > 0) {
-    <mat-card class="section-card alert-section" appearance="outlined">
-      <mat-card-header class="section-card-header">
-        <mat-icon mat-card-avatar color="warn">warning</mat-icon>
-        <mat-card-title>Productos con Existencias Críticas</mat-card-title>
-        <mat-card-subtitle>Estos productos están en el nivel mínimo o agotados y requieren órdenes de compra urgentes.</mat-card-subtitle>
-        <a mat-stroked-button color="warn" routerLink="/purchasing/purchases" [queryParams]="{ action: 'new' }" class="header-action-btn">
-          Emitir orden de compra
-        </a>
-      </mat-card-header>
+    <mat-card class="stat-card" appearance="outlined">
+      <mat-card-content class="stat-content">
+        <div class="stat-icon icon-alerts">
+          <mat-icon color="warn">warning</mat-icon>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Alertas de Stock Bajo</span>
+          <strong class="stat-value">{{ loadingLowestStock ? '...' : lowStockCount }}</strong>
+        </div>
+      </mat-card-content>
+    </mat-card>
 
-      <mat-card-content>
+    <mat-card class="stat-card" appearance="outlined">
+      <mat-card-content class="stat-content">
+        <div class="stat-icon icon-investment">
+          <mat-icon>star</mat-icon>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Proveedor Principal</span>
+          <strong class="stat-value text-compact">
+            {{ loadingTopSuppliers ? '...' : (topSuppliersPurchases[0]?.supplierName || 'Sin datos') }}
+          </strong>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="stat-card" appearance="outlined">
+      <mat-card-content class="stat-content">
+        <div class="stat-icon icon-purchases">
+          <mat-icon>receipt_long</mat-icon>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Órdenes Realizadas</span>
+          <strong class="stat-value">{{ loadingStats ? '...' : totalPurchases }}</strong>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </section>
+
+  <!-- Reporte: Productos con Existencias Críticas (sin acciones ni badges pesados) -->
+  @if (lowestStockProducts.length > 0) {
+    <mat-card class="section-card" appearance="outlined">
+      <div class="section-card-header">
+        <h3>Productos con Existencias Críticas</h3>
+      </div>
+
+      <div class="table-responsive">
+        <table class="compact-table">
+          <thead>
+            <tr>
+              <th>Producto</th>
+              <th>SKU</th>
+              <th>Categoría</th>
+              <th class="text-center">Stock Actual</th>
+              <th class="text-center">Stock Mínimo</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of lowestStockProducts; track item.productId) {
+              <tr>
+                <td>{{ item.product }}</td>
+                <td>{{ item.sku || '—' }}</td>
+                <td>{{ item.category || 'General' }}</td>
+                <td class="text-center">{{ item.quantityOnHand ?? 0 }}</td>
+                <td class="text-center">{{ item.minStockLevel ?? 0 }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </mat-card>
+  }
+
+  <!-- Reportes Grid: Top Proveedores y Productos Más Frecuentes -->
+  <section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    
+    <!-- Top 5 Proveedores por Compra -->
+    <mat-card class="section-card" appearance="outlined">
+      <div class="section-card-header">
+        <h3>Top 5 Proveedores con Mayor Compra</h3>
+      </div>
+
+      @if (loadingTopSuppliers) {
+        <div class="loading-state">
+          <mat-spinner diameter="32"></mat-spinner>
+          <p>Cargando datos...</p>
+        </div>
+      } @else if (topSuppliersPurchases.length === 0) {
+        <div class="empty-state">
+          <p>No se encontraron datos</p>
+        </div>
+      } @else {
+        <div class="table-responsive">
+          <table class="compact-table">
+            <thead>
+              <tr>
+                <th>Proveedor</th>
+                <th class="text-center">Órdenes</th>
+                <th class="text-right">Total Acumulado</th>
+                <th class="text-right">Última Fecha</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (sup of topSuppliersPurchases; track sup.supplierId) {
+                <tr>
+                  <td>{{ sup.supplierName }}</td>
+                  <td class="text-center">{{ sup.purchaseCount }}</td>
+                  <td class="text-right">{{ formatCurrency(sup.totalPurchaseAmount) }}</td>
+                  <td class="text-right">{{ formatDate(sup.lastPurchaseDate) }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </mat-card>
+
+    <!-- Productos Adquiridos Más Frecuentemente -->
+    <mat-card class="section-card" appearance="outlined">
+      <div class="section-card-header">
+        <h3>Productos Más Frecuentes en Compras</h3>
+      </div>
+
+      @if (loadingFrequentPurchased) {
+        <div class="loading-state">
+          <mat-spinner diameter="32"></mat-spinner>
+          <p>Cargando datos...</p>
+        </div>
+      } @else if (mostFrequentlyPurchased.length === 0) {
+        <div class="empty-state">
+          <p>No se encontraron datos</p>
+        </div>
+      } @else {
         <div class="table-responsive">
           <table class="compact-table">
             <thead>
               <tr>
                 <th>Producto</th>
                 <th>SKU</th>
-                <th>Stock Actual</th>
-                <th>Stock Mínimo Requerido</th>
-                <th>Estado</th>
-                <th class="text-right">Acción</th>
+                <th class="text-center">Compras</th>
+                <th class="text-center">Cantidad</th>
+                <th class="text-right">Monto Total</th>
               </tr>
             </thead>
             <tbody>
-              @for (item of lowStockItems; track item.id) {
+              @for (fp of mostFrequentlyPurchased; track fp.productId) {
                 <tr>
-                  <td class="font-medium text-main">{{ item.product?.name || 'Producto #' + (item.product?.id || item.id) }}</td>
-                  <td class="font-mono text-muted">{{ item.product?.sku || '—' }}</td>
-                  <td>
-                    <span class="stock-pill" [class.stock-zero]="(item.quantityOnHand ?? 0) <= 0">
-                      {{ item.quantityOnHand ?? 0 }} unidades
-                    </span>
-                  </td>
-                  <td class="text-muted">{{ item.product?.minStockLevel ?? 0 }} unidades</td>
-                  <td>
-                    @if ((item.quantityOnHand ?? 0) <= 0) {
-                      <span class="badge-critical">Agotado</span>
-                    } @else {
-                      <span class="badge-low">Stock Bajo</span>
-                    }
-                  </td>
-                  <td class="text-right">
-                    <a mat-button color="primary" routerLink="/purchasing/purchases" [queryParams]="{ action: 'new', productId: item.product?.id }">
-                      Comprar
-                    </a>
-                  </td>
+                  <td>{{ fp.product }}</td>
+                  <td>{{ fp.sku || '—' }}</td>
+                  <td class="text-center">{{ fp.purchaseCount }}</td>
+                  <td class="text-center">{{ fp.totalQuantityPurchased }}</td>
+                  <td class="text-right">{{ formatCurrency(fp.totalPurchaseAmount) }}</td>
                 </tr>
               }
             </tbody>
           </table>
         </div>
-      </mat-card-content>
+      }
+    </mat-card>
+  </section>
+
+  <!-- Reporte de Apoyo: Top Productos Más Vendidos (sin acciones) -->
+  @if (topProductsSold.length > 0) {
+    <mat-card class="section-card" appearance="outlined">
+      <div class="section-card-header">
+        <h3>Demanda Comercial (Top Productos Más Vendidos)</h3>
+      </div>
+
+      <div class="table-responsive">
+        <table class="compact-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Producto</th>
+              <th>SKU</th>
+              <th>Categoría</th>
+              <th class="text-center">Uds. Vendidas</th>
+              <th class="text-right">Ingreso por Ventas</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of topProductsSold; track item.productId; let i = $index) {
+              <tr>
+                <td>{{ i + 1 }}</td>
+                <td>{{ item.product }}</td>
+                <td>{{ item.sku || '—' }}</td>
+                <td>{{ item.category || 'General' }}</td>
+                <td class="text-center">{{ item.totalQuantitySold }}</td>
+                <td class="text-right">{{ formatCurrency(item.totalRevenue) }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
     </mat-card>
   }
 

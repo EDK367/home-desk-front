@@ -288,6 +288,7 @@
 .table-responsive {
   width: 100%;
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .compact-table {
@@ -305,6 +306,7 @@
   color: var(--color-text-muted, #6b7c74);
   border-bottom: 1px solid var(--color-border, #d0ddd6);
   background: #f9faf8;
+  white-space: nowrap;
 }
 
 .compact-table td {
@@ -312,6 +314,7 @@
   font-size: 0.84rem;
   border-bottom: 1px solid #f0f3f1;
   vertical-align: middle;
+  white-space: nowrap;
 }
 
 .compact-table tr:hover {
@@ -485,13 +488,6 @@
   font-size: 0.95rem;
   font-weight: 700;
   color: var(--color-text, #1a2e23);
-  margin: 0 0 0.25rem 0;
-}
-
-.shortcut-text p {
-  font-size: 0.8rem;
-  color: var(--color-text-muted, #6b7c74);
-  line-height: 1.4;
   margin: 0;
 }
 
@@ -527,7 +523,11 @@
 }
 
 .text-right {
-  text-align: right;
+  text-align: right !important;
+}
+
+.text-center {
+  text-align: center !important;
 }
 
 .font-mono {
