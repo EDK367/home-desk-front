@@ -117,6 +117,16 @@ export const routes: Routes = [
         pathMatch: 'full'
       },
       {
+        path: 'audit-logs',
+        loadComponent: () =>
+          import('./features/admin/pages/audit-logs/audit-logs').then(m => m.AuditLogs),
+      },
+      {
+        path: 'auditoria',
+        redirectTo: 'audit-logs',
+        pathMatch: 'full'
+      },
+      {
         path: '',
         redirectTo: 'dashboard',
         pathMatch: 'full'

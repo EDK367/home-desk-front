@@ -375,7 +375,7 @@ export class Users implements OnInit, OnDestroy {
 
     if (this.isEditMode && this.editingUser?.id) {
       if (!payload.password) {
-        payload.password = 'password123';
+        payload.password = 'notpassword';
       }
 
       const targetId = this.editingUser.id;
@@ -453,7 +453,7 @@ export class Users implements OnInit, OnDestroy {
       const payload: UserRequest = {
         fullName: user.fullName || '',
         email: user.email || '',
-        password: 'password123',
+        password: '',
         roleId: user.role?.id || 1
       };
       this.userService.updateUser(user.id, payload).subscribe({

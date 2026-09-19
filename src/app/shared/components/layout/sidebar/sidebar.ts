@@ -35,7 +35,8 @@ export const ROLE_MENUS: Record<string, RoleMenuConfig> = {
         title: 'USUARIOS Y ROLES',
         items: [
           { label: 'Usuarios', icon: 'users', route: '/admin/users' },
-          { label: 'Roles', icon: 'user-gear', route: '/admin/roles' }
+          { label: 'Roles', icon: 'user-gear', route: '/admin/roles' },
+          { label: 'Auditoría', icon: 'shield', route: '/admin/audit-logs' }
         ]
       },
       {

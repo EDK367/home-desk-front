@@ -6,6 +6,6 @@
 
 export const environment = {
   production: true,
-  apiUrl: 'https://home-desk-api.onrender.com/api/v1',
-  wsUrl: 'wss://home-desk-api.onrender.com/ws'
+  apiUrl: 'https://home-desk-back.onrender.com/api/v1',
+  wsUrl: 'wss://home-desk-back.onrender.com/ws'
 };

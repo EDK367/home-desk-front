@@ -1,0 +1,134 @@
+<div class="p-6 w-full flex flex-col gap-6">
+
+  <header class="flex justify-between items-center flex-wrap gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900">Auditoría del Sistema</h1>
+      <p class="text-sm text-gray-500">Historial y registro de actividad de los usuarios</p>
+    </div>
+    <div class="flex items-center gap-3">
+      <mat-chip class="results-badge">
+        Total: {{ totalElements }} {{ totalElements === 1 ? 'registro' : 'registros' }}
+      </mat-chip>
+    </div>
+  </header>
+
+  <mat-card class="controls-top-card" appearance="outlined">
+    <mat-card-content class="p-3 flex justify-between items-center gap-4 flex-wrap">
+      <div class="flex items-center gap-3 flex-wrap">
+        <mat-form-field appearance="outline" class="w-44 mb-[-1.25em]">
+          <mat-label>Ordenar por</mat-label>
+          <mat-select [ngModel]="sortField" (ngModelChange)="onSortFieldChange($event)">
+            <mat-option value="createdAt">Fecha y Hora</mat-option>
+            <mat-option value="action">Acción</mat-option>
+            <mat-option value="module">Módulo</mat-option>
+            <mat-option value="id">ID</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="w-40 mb-[-1.25em]">
+          <mat-label>Dirección</mat-label>
+          <mat-select [ngModel]="sortOrder" (ngModelChange)="onSortOrderChange($event)">
+            <mat-option value="DESC">Más recientes</mat-option>
+            <mat-option value="ASC">Más antiguos</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="w-36 mb-[-1.25em]">
+          <mat-label>Por página</mat-label>
+          <mat-select [ngModel]="pageSize" (ngModelChange)="onPageSizeChange($event)">
+            <mat-option [value]="5">5 por página</mat-option>
+            <mat-option [value]="10">10 por página</mat-option>
+            <mat-option [value]="20">20 por página</mat-option>
+            <mat-option [value]="50">50 por página</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <span class="text-xs text-gray-500 font-medium">Página <strong>{{ currentPage }}</strong> de <strong>{{
+            totalPages }}</strong></span>
+        <div class="flex items-center gap-1">
+          <button mat-icon-button (click)="goToPage(1)" [disabled]="currentPage === 1" title="Primera página">
+            <mat-icon>first_page</mat-icon>
+          </button>
+          <button mat-icon-button (click)="goToPage(currentPage - 1)" [disabled]="currentPage === 1" title="Anterior">
+            <mat-icon>chevron_left</mat-icon>
+          </button>
+          @for (p of pagesArray; track p) {
+          <button mat-stroked-button (click)="goToPage(p)" [color]="p === currentPage ? 'primary' : ''"
+            class="btn-page-num">
+            {{ p }}
+          </button>
+          }
+          <button mat-icon-button (click)="goToPage(currentPage + 1)" [disabled]="currentPage >= totalPages"
+            title="Siguiente">
+            <mat-icon>chevron_right</mat-icon>
+          </button>
+          <button mat-icon-button (click)="goToPage(totalPages)" [disabled]="currentPage >= totalPages"
+            title="Última página">
+            <mat-icon>last_page</mat-icon>
+          </button>
+        </div>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card class="table-card" appearance="outlined">
+    <mat-card-content>
+      @if (loading) {
+      <div class="loading-state">
+        <mat-spinner diameter="40"></mat-spinner>
+        <p>Cargando registros de auditoría...</p>
+      </div>
+      } @else if (auditLogs.length === 0) {
+      <div class="empty-state">
+        <mat-icon class="empty-icon">history</mat-icon>
+        <h3 class="text-base font-bold text-gray-800">No hay registros de auditoría</h3>
+        <p class="text-sm text-gray-500">Aún no se ha registrado actividad en el sistema.</p>
+      </div>
+      } @else {
+      <div class="table-responsive">
+        <table class="audit-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Fecha y Hora</th>
+              <th>Usuario</th>
+              <th>Acción</th>
+              <th>Módulo</th>
+              <th>Entidad</th>
+              <th>ID Entidad</th>
+              <th>Descripción</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (log of auditLogs; track log.id) {
+            <tr>
+              <td class="font-mono text-muted">#{{ log.id }}</td>
+              <td class="text-sm text-gray-700 whitespace-nowrap">{{ formatDate(log.createdAt) }}</td>
+              <td class="font-medium text-main">
+                <div class="user-cell">
+                  <span>{{ log.userFullName || log.username || '—' }}</span>
+                  @if (log.username && log.userFullName) {
+                  <span class="text-xs text-gray-400">({{ log.username }})</span>
+                  }
+                </div>
+              </td>
+              <td>
+                <span class="action-chip" [ngClass]="getActionBadgeClass(log.action)">{{ log.action }}</span>
+              </td>
+              <td class="text-sm text-gray-700">{{ log.module }}</td>
+              <td class="text-sm text-gray-600">{{ log.entityName || '—' }}</td>
+              <td class="font-mono text-xs text-muted">{{ log.entityId || '—' }}</td>
+              <td class="text-sm text-gray-600 max-w-xs truncate" [title]="log.description || ''">{{ log.description ||
+                '—' }}</td>
+            </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      }
+    </mat-card-content>
+  </mat-card>
+
+</div>
